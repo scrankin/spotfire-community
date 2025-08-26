@@ -1,25 +1,30 @@
 # Spotfire Community
 
-Tools for working with the Spotfire Library REST API (v2) and DXP files. The repo includes a production-ready Python client, DXP utilities, a FastAPI mock server for tests, and a uv-powered workflow.
+Spotfire Community is a Python package for working with the Spotfire Library REST API (v2) and DXP files.
 
-## What’s inside
+## Installation
 
-- Library client: upload to/create/delete in the Spotfire Library
-- DXP helpers: unzip, inspect, and repackage DXP artifacts
-- Mock Library v2 API (FastAPI): deterministic tests without a real server
-- uv environment: fast resolution, lockfile, and “run” for commands
+Install from PyPI (recommended):
 
-## Installation (uv)
+Using pip:
 
 ```sh
-uv sync --dev
+pip install spotfire-community
 ```
 
-Python: see `requires-python` in `pyproject.toml` (3.13+).
+Using uv:
+
+```sh
+uv add spotfire-community
+```
+
+Python 3.10+ is required (see `pyproject.toml`).
 
 ## Usage
 
-### Library client
+### Library Client
+
+Upload, create, and delete items in the Spotfire Library:
 
 ```python
 from spotfire_community import LibraryClient
@@ -41,19 +46,31 @@ file_id = client.upload_file(
 print("uploaded:", file_id)
 ```
 
-### DXP utilities
+### DXP Utilities
+
+Inspect and repackage DXP files:
 
 ```python
 from spotfire_community import Dxp
 
-dxp = Dxp("/path/to/Analysis.dxp")
+
 print(dxp.get_all_files())
 zip_bytes = dxp.get_zip_folder_in_memory()  # BytesIO
 ```
 
-## Mock Library v2 API and tests
+---
 
-Mock endpoints implemented in `src/mock_spotfire/library_v2/`:
+## Development
+
+For development and testing (requires [uv](https://github.com/astral-sh/uv)):
+
+```sh
+uv sync --dev
+```
+
+### Mock Library v2 API and Tests
+
+The package includes a FastAPI mock server for deterministic tests (not included in the PyPI package):
 - Router and handlers: `src/mock_spotfire/library_v2/paths.py`
 - Models: `src/mock_spotfire/library_v2/models.py`
 - Errors: `src/mock_spotfire/library_v2/errors.py`
@@ -74,17 +91,17 @@ Run tests:
 uv run -m pytest -q
 ```
 
-## Dev Container (VS Code)
+### Dev Container (VS Code)
 
 This repo ships a devcontainer for a consistent environment (Debian 12 + Python 3.13 + uv).
 
-What you get
+What you get:
 - Python 3.13 base image
 - uv installed by post-create script
 - `.venv` virtual environment managed by uv
 - Extensions: Python, TOML
 
-Open it
+Open it:
 1. Install “Dev Containers” in VS Code.
 2. Open the repo folder and choose “Reopen in Container”.
 3. Wait for the post-create to finish; then run:
@@ -96,12 +113,12 @@ uvx ruff format --check .
 uv run -m pytest -q
 ```
 
-Notes
+Notes:
 - The container uses the `vscode` user and exposes `WORKSPACE_PATH`.
 - After changing dependencies, run `uv sync` again.
 - If `uv` is not found, ensure it’s on PATH or re-run the post-create.
 
-## CI
+### CI
 
 GitHub Actions runs lint, type‑check, and tests. See `.github/workflows/ci.yaml`.
 
