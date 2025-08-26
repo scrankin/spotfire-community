@@ -1,0 +1,20 @@
+repos:
+  # Ruff (formatter and linter)
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        entry: uvx ruff format
+        language: system
+        pass_filenames: true
+        types_or: [python]
+
+  # Run pyright via a local hook so it uses your uv-managed env
+  - repo: local
+    hooks:
+      - id: pyright
+        name: pyright (strict)
+        entry: uvx pyright
+        language: system
+        pass_filenames: false
+        types_or: [python]

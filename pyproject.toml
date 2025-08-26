@@ -1,0 +1,65 @@
+[project]
+name = "spotfire-community"
+version = "0.1.0"
+description = "Spotfire Community tools for working with the Spotfire Library API and DXP files."
+readme = "README.md"
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.32.5",
+]
+keywords = ["spotfire", "dxp", "rest", "library", "tibco"]
+authors = [{ name = "Clay Rankin", email = "clay@wiserocksoftware.com" }]
+
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["*"]
+exclude = ["mock_spotfire"]
+
+[tool.setuptools.package-data]
+spotfire_community = ["py.typed"]
+
+[tool.uv]
+package = true
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.2",
+    "fastapi>=0.112.2",
+    "uvicorn>=0.30.6",
+    "httpx>=0.28.1",
+]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+include = ["src"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+]
+
+venvPath = "."
+venv = ".venv"
+
+pythonVersion = "3.13"
+pythonPlatform = "Linux"
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+]

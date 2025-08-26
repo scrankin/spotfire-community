@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-test-lint:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Cache uv
+        uses: actions/cache@v4
+        with:
+          path: |
+            .venv
+            .uv
+            .uv_cache
+          key: uv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('pyproject.toml', 'uv.lock') }}
+          restore-keys: |
+            uv-${{ runner.os }}-${{ matrix.python-version }}-
+
+      - name: Sync deps (with dev)
+        run: uv sync --dev
+
+      - name: Lint (ruff)
+        run: |
+          uvx ruff format --check .
+
+      - name: Type check (pyright strict)
+        run: uvx pyright
+
+      - name: Run tests
+        run: uv run pytest --maxfail=1 --disable-warnings -q
+      
+      - name: Check if importable
+        run: uv run --with spotfire_community --no-project -- python -c "import spotfire_community"

@@ -1,0 +1,110 @@
+# Spotfire Community
+
+Tools for working with the Spotfire Library REST API (v2) and DXP files. The repo includes a production-ready Python client, DXP utilities, a FastAPI mock server for tests, and a uv-powered workflow.
+
+## What’s inside
+
+- Library client: upload to/create/delete in the Spotfire Library
+- DXP helpers: unzip, inspect, and repackage DXP artifacts
+- Mock Library v2 API (FastAPI): deterministic tests without a real server
+- uv environment: fast resolution, lockfile, and “run” for commands
+
+## Installation (uv)
+
+```sh
+uv sync --dev
+```
+
+Python: see `requires-python` in `pyproject.toml` (3.13+).
+
+## Usage
+
+### Library client
+
+```python
+from spotfire_community import LibraryClient
+from spotfire_community.library.models import ItemType
+
+client = LibraryClient(
+	spotfire_url="https://your-spotfire-host",  # e.g., https://dev.spotfire.com
+	client_id="YOUR_CLIENT_ID",
+	client_secret="YOUR_CLIENT_SECRET",
+)
+
+file_id = client.upload_file(
+	data=b"...bytes...",            # upload raw content
+	path="/Samples/Doc1",           # library path
+	item_type=ItemType.DXP,
+	description="Uploaded via LibraryClient",
+	overwrite=False,
+)
+print("uploaded:", file_id)
+```
+
+### DXP utilities
+
+```python
+from spotfire_community import Dxp
+
+dxp = Dxp("/path/to/Analysis.dxp")
+print(dxp.get_all_files())
+zip_bytes = dxp.get_zip_folder_in_memory()  # BytesIO
+```
+
+## Mock Library v2 API and tests
+
+Mock endpoints implemented in `src/mock_spotfire/library_v2/`:
+- Router and handlers: `src/mock_spotfire/library_v2/paths.py`
+- Models: `src/mock_spotfire/library_v2/models.py`
+- Errors: `src/mock_spotfire/library_v2/errors.py`
+- In-memory state: `src/mock_spotfire/library_v2/state.py`
+
+Endpoints:
+- `POST /spotfire/oauth2/token`
+- `GET/POST /spotfire/api/rest/library/v2/items`
+- `DELETE /spotfire/api/rest/library/v2/items/{id}`
+- `POST /spotfire/api/rest/library/v2/upload`
+- `POST /spotfire/api/rest/library/v2/upload/{jobId}`
+
+Tests use `fastapi.testclient.TestClient` and monkeypatch `requests.Session` so the client talks to the mock app in‑memory. See `tests/library/upload/*.py`.
+
+Run tests:
+
+```sh
+uv run -m pytest -q
+```
+
+## Dev Container (VS Code)
+
+This repo ships a devcontainer for a consistent environment (Debian 12 + Python 3.13 + uv).
+
+What you get
+- Python 3.13 base image
+- uv installed by post-create script
+- `.venv` virtual environment managed by uv
+- Extensions: Python, TOML
+
+Open it
+1. Install “Dev Containers” in VS Code.
+2. Open the repo folder and choose “Reopen in Container”.
+3. Wait for the post-create to finish; then run:
+
+```sh
+uv sync --dev
+uvx pyright
+uvx ruff format --check .
+uv run -m pytest -q
+```
+
+Notes
+- The container uses the `vscode` user and exposes `WORKSPACE_PATH`.
+- After changing dependencies, run `uv sync` again.
+- If `uv` is not found, ensure it’s on PATH or re-run the post-create.
+
+## CI
+
+GitHub Actions runs lint, type‑check, and tests. See `.github/workflows/ci.yaml`.
+
+## License
+
+Open source. See `LICENSE`.
