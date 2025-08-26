@@ -1,6 +1,6 @@
 [project]
 name = "spotfire-community"
-version = "0.1.0"
+version = "0.1.1"
 description = "Spotfire Community tools for working with the Spotfire Library API and DXP files."
 readme = "README.md"
 license = "MIT"
@@ -19,6 +19,9 @@ dependencies = [
 ]
 keywords = ["spotfire", "dxp", "rest", "library", "tibco"]
 authors = [{ name = "Clay Rankin", email = "clay@wiserocksoftware.com" }]
+
+[project.urls]
+Repository = "https://github.com/scrankin/spotfire-community"
 
 [build-system]
 requires = ["setuptools>=42"]
