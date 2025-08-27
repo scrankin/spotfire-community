@@ -1,7 +1,6 @@
 from .client import LibraryClient
 from .models import (
     ItemType,
-    Scope,
     ConflictResolution,
 )
 
@@ -9,6 +8,5 @@ from .models import (
 __all__ = [
     "LibraryClient",
     "ItemType",
-    "Scope",
     "ConflictResolution",
 ]

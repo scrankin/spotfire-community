@@ -14,7 +14,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from mock_spotfire.library_v2 import app  # noqa: E402
+from mock_spotfire import app
 
 
 class RequestsCompatibleTestClient(TestClient):

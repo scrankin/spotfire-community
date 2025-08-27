@@ -1,4 +1,4 @@
-from .paths import router
+from .router import router
 
 
 __all__ = [

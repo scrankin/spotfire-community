@@ -8,13 +8,8 @@ from .errors import ErrorCode, error_response
 from .models import LibraryItem, UploadJob
 from .state import state
 
+
 router = APIRouter()
-
-
-@router.post("/spotfire/oauth2/token")
-def oauth2_token(grant_type: str = Query("client_credentials"), scope: str = Query("")):
-    # Minimal token endpoint to satisfy LibraryClient authentication.
-    return {"access_token": "mock-token", "token_type": "bearer"}
 
 
 @router.get("/spotfire/api/rest/library/v2/items")
@@ -187,3 +182,8 @@ async def upload_chunk(
         return {"item": {"id": item_id}}
 
     return {"status": "chunk received", "chunk": chunk_index}
+
+
+__all__ = [
+    "router",
+]
