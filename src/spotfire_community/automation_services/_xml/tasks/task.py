@@ -1,33 +1,42 @@
+from abc import ABC, abstractmethod
+from typing import Optional, final
 from xml.etree.ElementTree import Element
 
-from .models import TaskAttribute
 
-
-class Task:
-    element_name: str
+class Task(ABC):
     namespace: str
-    title: str
 
-    def __init__(self, namespace: str | None):
+    def __init__(self, namespace: Optional[str] = None):
         self.namespace = namespace or "urn:tibco:spotfire.dxp.automation.tasks"
 
+    @property
+    @abstractmethod
+    def name(self) -> str: ...
+
+    @property
+    @abstractmethod
+    def title(self) -> str: ...
+
+    @abstractmethod
+    def build_attribute_elements(self) -> list[Element]: ...
+
+    @final
     def _get_title_element(self) -> Element:
         element = Element("as:Title")
         element.text = self.title
         return element
 
-    def _build_attribute_element(self, attribute: TaskAttribute) -> Element:
-        element = Element(attribute.name)
-        element.text = attribute.value
+    @final
+    def build_element(self, name: str, inner_text: str) -> Element:
+        element = Element(name)
+        element.text = inner_text
         return element
 
-    def attribute_generator(self) -> list[TaskAttribute]:
-        return []
-
+    @final
     def serialize(self) -> Element:
-        element = Element(self.element_name)
+        element = Element(self.name)
         element.set("xmlns", self.namespace)
         element.append(self._get_title_element())
-        for attr_element in self.attribute_generator():
-            element.append(self._build_attribute_element(attr_element))
+        for attribute_element in self.build_attribute_elements():
+            element.append(attribute_element)
         return element

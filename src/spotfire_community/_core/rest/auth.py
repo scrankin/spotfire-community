@@ -21,6 +21,7 @@ def authenticate(
                 "scope": " ".join([scope.value for scope in scopes]),
             },
         )
+        token_response.raise_for_status()
     except RequestException as e:
         raise Exception(f"Failed to connect to Spotfire server: {e}")
 
@@ -29,9 +30,12 @@ def authenticate(
             f"Failed to authenticate with Spotfire server: {token_response.status_code} - {token_response.text}"
         )
 
+    if (token := token_response.json().get("access_token")) is None:
+        raise Exception("No access token found in response.")
+
     requests_session.headers.update(
         {
-            "Authorization": f"Bearer {token_response.json()['access_token']}",
+            "Authorization": f"Bearer {token}",
             "Accept": "application/json",
         }
     )

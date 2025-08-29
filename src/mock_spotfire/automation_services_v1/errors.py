@@ -1,6 +1,13 @@
 from fastapi import HTTPException
 
 
+class InvalidJobIdError(HTTPException):
+    def __init__(self, job_id: str):
+        super().__init__(
+            status_code=400, detail=f"Invalid job ID: {job_id}. Should be a UUID"
+        )
+
+
 class JobNotFoundError(HTTPException):
     def __init__(self):
         super().__init__(status_code=404, detail=f"Job not Found")
@@ -28,7 +35,7 @@ class InvalidJobDefinitionError(HTTPException):
 
 class JobDefinitionNotFoundError(HTTPException):
     def __init__(self):
-        super().__init__(status_code=404, detail=f"Job definition not found")
+        super().__init__(status_code=200, detail=f"Job definition not found")
 
 
 class TooManyJobDefinitionParamsError(HTTPException):

@@ -6,6 +6,7 @@ from fastapi import (
 )
 
 from .errors import (
+    InvalidJobIdError,
     JobNotFoundError,
     EmptyJobBodyError,
     InvalidContentType,
@@ -16,15 +17,20 @@ from .errors import (
 )
 from .models import ExecutionStatusResponse, JobDefinition, ExecutionStatus
 from .state import state
+from .._core.uuid import is_valid_uuid
 
 
 router = APIRouter()
+
+router.prefix = "/spotfire/api/rest/as"
 
 
 @router.get("/job/status/{job_id}")
 def job_status(
     job_id: str,
 ):
+    if not is_valid_uuid(job_id):
+        raise InvalidJobIdError(job_id)
     job = state.get_job(job_id=job_id)
     if job is None:
         raise JobNotFoundError()
@@ -40,6 +46,8 @@ def cancel_job(
         default=None, description="A text describing the reason for aborting the job"
     ),
 ):
+    if not is_valid_uuid(job_id):
+        raise InvalidJobIdError(job_id)
     job = state.get_job(job_id=job_id)
     if job is None:
         raise JobNotFoundError()
@@ -66,7 +74,7 @@ async def start_xml_job(request: Request):
 
 
 @router.post("/job/start-library")
-async def start_library_job(
+def start_library_job(
     job_definition_id: str | None = Query(
         alias="id", description="The library ID of the Automation Services job"
     ),

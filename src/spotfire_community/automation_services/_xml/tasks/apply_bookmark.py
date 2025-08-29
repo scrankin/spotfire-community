@@ -1,4 +1,6 @@
-from .models import TaskAttribute
+from typing import Optional
+from xml.etree.ElementTree import Element
+
 from .task import Task
 
 
@@ -9,9 +11,10 @@ class ApplyBookmarkTask(Task):
 
     def __init__(
         self,
-        bookmark_id: str | None,
-        bookmark_name: str | None,
-        namespace: str | None,
+        *,
+        bookmark_id: Optional[str] = None,
+        bookmark_name: Optional[str] = None,
+        namespace: Optional[str] = None,
     ):
         self._use_bookmark_name = bookmark_id is None
         if bookmark_id is not None and bookmark_name is not None:
@@ -26,12 +29,19 @@ class ApplyBookmarkTask(Task):
             self.bookmark_name = bookmark_name
         super().__init__(namespace)
 
-    def attribute_generator(self) -> list[TaskAttribute]:
-        attributes: list[TaskAttribute] = [
-            TaskAttribute(name="BookmarkId", value=self.bookmark_id),
-            TaskAttribute(name="BookmarkName", value=self.bookmark_name),
-            TaskAttribute(
-                name="UseBookmarkName", value=str(self._use_bookmark_name).lower()
-            ),
+    @property
+    def name(self) -> str:
+        return "ApplyBookmark"
+
+    @property
+    def title(self) -> str:
+        return "Apply Bookmark"
+
+    def build_attribute_elements(self) -> list[Element]:
+        attribute_elements: list[Element] = [
+            self.build_element("BookmarkId", self.bookmark_id),
+            self.build_element("BookmarkName", self.bookmark_name),
+            self.build_element("UseBookmarkName", str(self._use_bookmark_name).lower()),
         ]
-        return attributes
+
+        return attribute_elements

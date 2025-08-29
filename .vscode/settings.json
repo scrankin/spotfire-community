@@ -10,4 +10,10 @@
         "**/.pytest_cache": true,
         "**/**.egg-info/": true,
     },
+    "python.testing.pytestArgs": [
+        "--cov=src/spotfire_community/",
+        "tests/"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
 }
