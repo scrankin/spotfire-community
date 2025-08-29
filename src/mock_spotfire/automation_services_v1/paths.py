@@ -2,7 +2,6 @@ from fastapi import (
     APIRouter,
     Query,
     Request,
-    HTTPException,
 )
 
 from .errors import (
@@ -13,6 +12,7 @@ from .errors import (
     InvalidJobDefinitionError,
     JobDefinitionNotFoundError,
     InvalidJobStatusError,
+    MissingArgumentsError,
 )
 from .models import ExecutionStatusResponse, JobDefinition, ExecutionStatus
 from .state import state
@@ -84,12 +84,15 @@ def start_library_job(
     job_definition: JobDefinition | None
     if job_definition_id is None and library_path is None:
         raise InvalidJobDefinitionError()
+    # Spotfire seems to prioritize id over path.
+    # I tested sending path and id for two different job definitions
+    # and it chose the id'd job.
     elif job_definition_id is not None:
         job_definition = state.get_job_definition_by_id(job_definition_id)
     elif library_path is not None:
         job_definition = state.get_job_definition_by_path(library_path)
     else:
-        raise HTTPException(status_code=500, detail="Shouldn't get here")
+        raise MissingArgumentsError()
 
     if job_definition is None:
         raise JobDefinitionNotFoundError()

@@ -43,6 +43,11 @@ class InvalidJobStatusError(HTTPException):
         super().__init__(status_code=400, detail=f"Invalid job status")
 
 
+class MissingArgumentsError(HTTPException):
+    def __init__(self):
+        super().__init__(status_code=400, detail=f"Missing arguments.")
+
+
 __all__ = [
     "JobNotFoundError",
     "EmptyJobBodyError",
@@ -51,4 +56,5 @@ __all__ = [
     "InvalidJobDefinitionError",
     "JobDefinitionNotFoundError",
     "InvalidJobStatusError",
+    "MissingArgumentsError",
 ]
