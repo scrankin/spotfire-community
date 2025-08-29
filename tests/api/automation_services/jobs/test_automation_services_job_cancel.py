@@ -2,15 +2,13 @@ import pytest
 from fastapi.testclient import TestClient
 from uuid import uuid4
 
+from mock_spotfire.automation_services_v1.state import JOB_ID_TO_CANCEL
 from spotfire_community.automation_services import AutomationServicesClient
 from spotfire_community.automation_services.errors import (
     JobNotFoundError,
     InvalidJobIdError,
 )
 from spotfire_community.automation_services.models import ExecutionStatus
-
-
-JOB_ID_TO_CANCEL = "d2c5f5e2-4a62-4ecc-bb05-2a27a0f13289"
 
 
 def test_job_cancel_behavior(test_client: TestClient):

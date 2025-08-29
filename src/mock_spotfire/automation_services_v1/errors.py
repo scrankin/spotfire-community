@@ -33,11 +33,6 @@ class InvalidJobDefinitionError(HTTPException):
         super().__init__(status_code=400, detail=f"Invalid job definition")
 
 
-class JobDefinitionNotFoundError(HTTPException):
-    def __init__(self):
-        super().__init__(status_code=200, detail=f"Job definition not found")
-
-
 class InvalidJobStatusError(HTTPException):
     def __init__(self):
         super().__init__(status_code=400, detail=f"Invalid job status")
@@ -54,7 +49,6 @@ __all__ = [
     "InvalidContentType",
     "InvalidJobXMLError",
     "InvalidJobDefinitionError",
-    "JobDefinitionNotFoundError",
     "InvalidJobStatusError",
     "MissingArgumentsError",
 ]

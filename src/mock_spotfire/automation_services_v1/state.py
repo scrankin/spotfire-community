@@ -5,6 +5,7 @@ from .models import Job, ExecutionStatus, JobDefinition
 
 EXISTING_JOB_ID = "598f5e27-4a62-4ecc-bb05-2a27a0f13289"
 JOB_ID_TO_CANCEL = "d2c5f5e2-4a62-4ecc-bb05-2a27a0f13289"
+EXISTING_JOB_DEFINITION_ID = "4ef5354f-5e6b-48ea-b4b7-1e527466df9b"
 
 
 class AutomationServicesState:
@@ -17,7 +18,9 @@ class AutomationServicesState:
             Job(id=JOB_ID_TO_CANCEL, status=ExecutionStatus.IN_PROGRESS),
         ]
         self.library_job_definitions = [
-            JobDefinition(id="test_job_definition", library_path="/test/job_definition")
+            JobDefinition(
+                id=EXISTING_JOB_DEFINITION_ID, library_path="/test/job_definition"
+            )
         ]
 
     def add_new_job(self) -> Job:

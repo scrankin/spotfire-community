@@ -10,13 +10,12 @@ from .errors import (
     EmptyJobBodyError,
     InvalidContentType,
     InvalidJobDefinitionError,
-    JobDefinitionNotFoundError,
     InvalidJobStatusError,
     MissingArgumentsError,
 )
 from .models import ExecutionStatusResponse, JobDefinition, ExecutionStatus
 from .state import state
-from .._core.uuid import is_valid_uuid
+from spotfire_community._core.validation import is_valid_uuid
 
 
 router = APIRouter()
@@ -78,7 +77,8 @@ def start_library_job(
         alias="id", description="The library ID of the Automation Services job"
     ),
     library_path: str | None = Query(
-        description="The library path of the Automation Services job"
+        alias="path",
+        description="The library path of the Automation Services job",
     ),
 ):
     job_definition: JobDefinition | None
@@ -95,7 +95,11 @@ def start_library_job(
         raise MissingArgumentsError()
 
     if job_definition is None:
-        raise JobDefinitionNotFoundError()
+        return ExecutionStatusResponse(
+            jobId="00000000-0000-0000-0000-000000000000",
+            statusCode=ExecutionStatus.FAILED,
+            message="Job file not found or no access.",
+        )
 
     job = state.add_new_job()
     return ExecutionStatusResponse(
