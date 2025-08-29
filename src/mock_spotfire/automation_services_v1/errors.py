@@ -38,14 +38,6 @@ class JobDefinitionNotFoundError(HTTPException):
         super().__init__(status_code=200, detail=f"Job definition not found")
 
 
-class TooManyJobDefinitionParamsError(HTTPException):
-    def __init__(self):
-        super().__init__(
-            status_code=400,
-            detail=f"Too many params for searching for library job definitions. Use path, or id, but not both.",
-        )
-
-
 class InvalidJobStatusError(HTTPException):
     def __init__(self):
         super().__init__(status_code=400, detail=f"Invalid job status")
@@ -58,6 +50,5 @@ __all__ = [
     "InvalidJobXMLError",
     "InvalidJobDefinitionError",
     "JobDefinitionNotFoundError",
-    "TooManyJobDefinitionParamsError",
     "InvalidJobStatusError",
 ]

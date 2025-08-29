@@ -12,7 +12,6 @@ from .errors import (
     InvalidContentType,
     InvalidJobDefinitionError,
     JobDefinitionNotFoundError,
-    TooManyJobDefinitionParamsError,
     InvalidJobStatusError,
 )
 from .models import ExecutionStatusResponse, JobDefinition, ExecutionStatus
@@ -85,8 +84,6 @@ def start_library_job(
     job_definition: JobDefinition | None
     if job_definition_id is None and library_path is None:
         raise InvalidJobDefinitionError()
-    if job_definition_id is not None and library_path is not None:
-        raise TooManyJobDefinitionParamsError()
     elif job_definition_id is not None:
         job_definition = state.get_job_definition_by_id(job_definition_id)
     elif library_path is not None:
