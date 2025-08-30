@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import time
 from enum import Enum
 
 
@@ -24,6 +25,7 @@ class ExecutionStatusResponse:
 class Job:
     id: str
     status: ExecutionStatus
+    created_at: float = field(default_factory=time.monotonic)
 
 
 @dataclass

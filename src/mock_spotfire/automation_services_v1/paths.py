@@ -3,6 +3,7 @@ from fastapi import (
     Query,
     Request,
 )
+import time
 from xml.etree import ElementTree
 
 from .errors import (
@@ -33,6 +34,10 @@ def job_status(
     job = state.get_job(job_id=job_id)
     if job is None:
         raise JobNotFoundError()
+    # If job is IN_PROGRESS and 5s have passed, mark as FINISHED
+    if job.status == ExecutionStatus.IN_PROGRESS:
+        if time.monotonic() - job.created_at > 5:
+            job.status = ExecutionStatus.FINISHED
     return ExecutionStatusResponse(
         jobId=job.id, statusCode=job.status, message="placeholder"
     )

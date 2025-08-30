@@ -1,3 +1,4 @@
+import time
 from typing import Optional
 
 from .._core.rest import SpotfireRequestsSession, authenticate, Scope
@@ -65,7 +66,7 @@ class AutomationServicesClient:
         *,
         job_definition_id: Optional[str] = None,
         library_path: Optional[str] = None,
-    ) -> ExecutionStatus:
+    ) -> ExecutionStatusResponse:
         if job_definition_id is not None and not is_valid_uuid(job_definition_id):
             raise InvalidJobDefinitionIdError(job_definition_id)
         response = self._requests_session.post(
@@ -82,12 +83,12 @@ class AutomationServicesClient:
                 job_definition_id=job_definition_id,
                 library_path=library_path,
             )
-        return data.statusCode
+        return data
 
     def start_job_definition(
         self,
         job_definition: JobDefinition,
-    ) -> ExecutionStatus:
+    ) -> ExecutionStatusResponse:
         response = self._requests_session.post(
             url=f"{self._url}/job/start-content",
             data=job_definition.as_bytes(),
@@ -96,4 +97,32 @@ class AutomationServicesClient:
         if response.status_code == 400:
             raise InvalidJobDefinitionXMLError()
         data = ExecutionStatusResponse(**response.json())
-        return data.statusCode
+        return data
+
+    def start_job_definition_and_wait(
+        self,
+        job_definition: JobDefinition,
+        *,
+        poll_interval: float = 1.0,
+        timeout: float = 60.0,
+    ) -> ExecutionStatus:
+        """
+        Starts a job definition and waits for it to finish or fail.
+        Returns the final ExecutionStatus.
+        Raises TimeoutError if the job does not finish in time.
+        """
+        job = self.start_job_definition(job_definition)
+        start_time = time.monotonic()
+        while True:
+            status = self.get_job_status(job.jobId)
+            if status in (
+                ExecutionStatus.FINISHED,
+                ExecutionStatus.FAILED,
+                ExecutionStatus.CANCELED,
+            ):
+                return status
+            if time.monotonic() - start_time > timeout:
+                raise TimeoutError(
+                    f"Job {job.jobId} did not finish within {timeout} seconds."
+                )
+            time.sleep(poll_interval)

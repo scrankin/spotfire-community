@@ -31,9 +31,9 @@ def test_job_cancel_behavior(test_client: TestClient):
     with pytest.raises(JobDefinitionNotFoundError):
         client.start_library_job_definition()
 
-    status = client.start_library_job_definition(
+    job = client.start_library_job_definition(
         job_definition_id=EXISTING_JOB_DEFINITION_ID
     )
 
     # Check status from mock api
-    assert status == ExecutionStatus.IN_PROGRESS
+    assert job.statusCode == ExecutionStatus.IN_PROGRESS
