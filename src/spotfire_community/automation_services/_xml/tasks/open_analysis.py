@@ -1,3 +1,5 @@
+"""Task that opens an analysis from the Spotfire library."""
+
 from typing import Optional
 from xml.etree.ElementTree import Element
 
@@ -5,6 +7,13 @@ from .task import Task
 
 
 class OpenAnalysisTask(Task):
+    """Serialize an OpenAnalysisFromLibrary task.
+
+    Args:
+        path: Library path to the analysis (e.g., "/Samples/Analysis.dxp").
+        configuration_block: Optional configuration block XML/text.
+    """
+
     path: str
     configuration_block: str
 

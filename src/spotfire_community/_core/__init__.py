@@ -1,3 +1,5 @@
+"""Core utilities re-exported for use by subpackages and users."""
+
 from .rest import authenticate, Scope, SpotfireRequestsSession
 from .validation import is_valid_uuid
 

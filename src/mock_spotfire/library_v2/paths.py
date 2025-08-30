@@ -18,6 +18,12 @@ def get_items(
     item_type: str | None = Query(None, alias="type"),
     maxResults: int | None = Query(None),
 ) -> Any:
+    """List items by path or type.
+
+    Special cases for testing:
+    - path == "return-500" -> raises 500
+    - unknown path -> 404
+    """
     # For testing
     if path == "return-500":
         raise HTTPException(status_code=500, detail="Fake Internal Server Error")
@@ -40,6 +46,7 @@ def get_items(
 
 @router.post("/spotfire/api/rest/library/v2/items")
 def create_item(payload: dict[str, Any]) -> JSONResponse:
+    """Create a new library item under a parent folder."""
     title = payload.get("title")
     if title == "return-500":
         raise HTTPException(status_code=500, detail="Fake Internal Server Error")
@@ -82,6 +89,7 @@ def create_item(payload: dict[str, Any]) -> JSONResponse:
 
 @router.delete("/spotfire/api/rest/library/v2/items/{item_id}")
 def delete_item(item_id: str):
+    """Delete an item by id, including its subtree."""
     if item_id not in state.items:
         raise HTTPException(status_code=404, detail="Item not found")
     if item_id == state.root_id:
@@ -112,6 +120,7 @@ def delete_item(item_id: str):
 
 @router.post("/spotfire/api/rest/library/v2/upload")
 def create_upload(payload: dict[str, Any]) -> JSONResponse:
+    """Create an upload job to upload content in one or more chunks."""
     overwrite = payload.get("overwriteIfExists", False)
     item_payload = payload.get("item", {})
     title = item_payload.get("title")
@@ -147,6 +156,7 @@ async def upload_chunk(
     chunk_index: int = Query(1, alias="chunk"),
     finish: bool = Query(False, alias="finish"),
 ):
+    """Upload a chunk for an upload job; finalize when ``finish`` is true."""
     if job_id not in state.upload_jobs:
         raise HTTPException(status_code=404, detail="Job not found")
     job = state.upload_jobs[job_id]

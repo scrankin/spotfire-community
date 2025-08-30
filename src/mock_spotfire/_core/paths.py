@@ -1,3 +1,5 @@
+"""Core utility endpoints for the mock API (e.g., OAuth token)."""
+
 from fastapi import Query, Request, HTTPException
 
 from .models import OAuthResponse
@@ -8,6 +10,11 @@ def oauth2_token(
     grant_type: str = Query("client_credentials"),
     scope: str = Query(""),
 ) -> OAuthResponse:
+    """Return a mock OAuth token; supports special basic auth triggers.
+
+    If the Authorization header matches specific base64-encoded values, this
+    endpoint deliberately raises a 500 or 202 for test coverage hooks.
+    """
     authorization = request.headers.get("authorization")
 
     # Test authorization for triggering 500

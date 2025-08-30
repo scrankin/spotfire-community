@@ -1,3 +1,5 @@
+"""Shared authentication helper for Spotfire REST clients."""
+
 from requests.exceptions import RequestException
 
 from .spotfire_requests import SpotfireRequestsSession
@@ -11,6 +13,10 @@ def authenticate(
     client_id: str,
     client_secret: str,
 ) -> None:
+    """Authenticate against Spotfire and set Bearer token on the session.
+
+    Raises Exception on connection failures, non-200 responses, or missing token.
+    """
     # Try to get the token to check if the credentials are valid
     try:
         token_response = requests_session.post(

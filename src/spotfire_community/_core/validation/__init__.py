@@ -1,3 +1,5 @@
+"""Validation helpers re-exported for convenience."""
+
 from .uuid import is_valid_uuid
 
 

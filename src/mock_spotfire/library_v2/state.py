@@ -1,9 +1,13 @@
+"""In-memory state store backing the mock Library v2 endpoints."""
+
 import uuid
 
 from .models import LibraryItem, UploadJob
 
 
 class LibraryState:
+    """Holds library items, path index and active upload jobs for tests."""
+
     def __init__(self):
         # Root folder
         root_id = str(uuid.uuid4())
@@ -20,6 +24,7 @@ class LibraryState:
         self.upload_jobs: dict[str, UploadJob] = {}
 
     def get_path(self, path: str) -> str | None:
+        """Return the item id for a given path, if any."""
         return self.path_index.get(path)
 
 

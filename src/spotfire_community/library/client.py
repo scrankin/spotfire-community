@@ -1,3 +1,5 @@
+"""Client for Spotfire Library REST API (v2)."""
+
 import logging
 import requests
 from .._core import SpotfireRequestsSession

@@ -1,3 +1,5 @@
+"""Dataclasses used by the mock core endpoints (e.g., OAuth responses)."""
+
 from dataclasses import dataclass
 
 

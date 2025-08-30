@@ -1,3 +1,5 @@
+"""Shared REST models used by Spotfire client code."""
+
 from enum import StrEnum
 
 

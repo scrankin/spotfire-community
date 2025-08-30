@@ -1,3 +1,5 @@
+"""Client for Spotfire Automation Services REST endpoints."""
+
 import time
 from typing import Optional
 
@@ -15,6 +17,8 @@ from ._xml import JobDefinition
 
 
 class AutomationServicesClient:
+    """High-level client for starting and monitoring Automation Services jobs."""
+
     _url: str
     _requests_session: SpotfireRequestsSession
 
@@ -26,6 +30,7 @@ class AutomationServicesClient:
         *,
         timeout: Optional[float] = 30.0,
     ):
+        """Create an authenticated client using OAuth2 client credentials."""
         self._url = f"{spotfire_url.rstrip('/')}/spotfire/api/rest/as"
         self._requests_session = SpotfireRequestsSession(timeout=timeout)
 
@@ -41,6 +46,10 @@ class AutomationServicesClient:
         self,
         job_id: str,
     ) -> ExecutionStatus:
+        """Fetch the current status of a job by id.
+
+        Raises InvalidJobIdError for non-UUID input and JobNotFoundError for 404.
+        """
         if not is_valid_uuid(job_id):
             raise InvalidJobIdError(job_id)
         response = self._requests_session.get(f"{self._url}/job/status/{job_id}")
@@ -53,6 +62,7 @@ class AutomationServicesClient:
         self,
         job_id: str,
     ) -> ExecutionStatus:
+        """Cancel an in-progress job and return its resulting status."""
         if not is_valid_uuid(job_id):
             raise InvalidJobIdError(job_id)
         response = self._requests_session.post(f"{self._url}/job/abort/{job_id}")
@@ -67,6 +77,7 @@ class AutomationServicesClient:
         job_definition_id: Optional[str] = None,
         library_path: Optional[str] = None,
     ) -> ExecutionStatusResponse:
+        """Start a job from a saved job definition by id or library path."""
         if job_definition_id is not None and not is_valid_uuid(job_definition_id):
             raise InvalidJobDefinitionIdError(job_definition_id)
         response = self._requests_session.post(
@@ -89,6 +100,7 @@ class AutomationServicesClient:
         self,
         job_definition: JobDefinition,
     ) -> ExecutionStatusResponse:
+        """Start a job from an XML job definition object."""
         response = self._requests_session.post(
             url=f"{self._url}/job/start-content",
             data=job_definition.as_bytes(),
@@ -106,10 +118,9 @@ class AutomationServicesClient:
         poll_interval: float = 1.0,
         timeout: float = 60.0,
     ) -> ExecutionStatus:
-        """
-        Starts a job definition and waits for it to finish or fail.
-        Returns the final ExecutionStatus.
-        Raises TimeoutError if the job does not finish in time.
+        """Start a job and poll until it finishes, fails, or times out.
+
+        Returns the final ExecutionStatus. Raises TimeoutError on timeout.
         """
         job = self.start_job_definition(job_definition)
         start_time = time.monotonic()

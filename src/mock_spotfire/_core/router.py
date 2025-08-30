@@ -1,3 +1,5 @@
+"""Router registration for core mock endpoints."""
+
 from fastapi import APIRouter
 
 from .paths import oauth2_token
