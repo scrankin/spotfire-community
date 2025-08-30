@@ -18,10 +18,10 @@ def test_start_job_definition_and_wait(test_client: TestClient):
 
     with pytest.raises(TimeoutError):
         client.start_job_definition_and_wait(
-            job_definition=job_definition, poll_interval=0.5, timeout=1
+            job_definition=job_definition, poll_interval=0.1, timeout=0.5
         )
 
     status = client.start_job_definition_and_wait(
-        job_definition=job_definition, poll_interval=0.5, timeout=10
+        job_definition=job_definition, poll_interval=0.1, timeout=2
     )
     assert status == ExecutionStatus.FINISHED
