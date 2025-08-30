@@ -42,6 +42,24 @@ class AutomationServicesClient:
             client_secret=client_secret,
         )
 
+    def _wait_for_job_status(
+        self,
+        job_id: str,
+        target_statuses: list[ExecutionStatus],
+        poll_interval: float = 1.0,
+        timeout: float = 30.0,
+    ) -> ExecutionStatus:
+        """Wait for a job to reach a specific status."""
+        start_time = time.monotonic()
+        while time.monotonic() - start_time < timeout:
+            status = self.get_job_status(job_id)
+            if status in target_statuses:
+                return status
+            time.sleep(poll_interval)
+        raise TimeoutError(
+            f"Job {job_id} did not reach status {target_statuses} in time."
+        )
+
     def get_job_status(
         self,
         job_id: str,
@@ -123,17 +141,40 @@ class AutomationServicesClient:
         Returns the final ExecutionStatus. Raises TimeoutError on timeout.
         """
         job = self.start_job_definition(job_definition)
-        start_time = time.monotonic()
-        while True:
-            status = self.get_job_status(job.job_id)
-            if status in (
+        return self._wait_for_job_status(
+            job_id=job.job_id,
+            target_statuses=[
                 ExecutionStatus.FINISHED,
                 ExecutionStatus.FAILED,
                 ExecutionStatus.CANCELED,
-            ):
-                return status
-            if time.monotonic() - start_time > timeout:
-                raise TimeoutError(
-                    f"Job {job.job_id} did not finish within {timeout} seconds."
-                )
-            time.sleep(poll_interval)
+            ],
+            poll_interval=poll_interval,
+            timeout=timeout,
+        )
+
+    def start_library_job_definition_and_wait(
+        self,
+        *,
+        job_definition_id: Optional[str] = None,
+        library_path: Optional[str] = None,
+        poll_interval: float = 1.0,
+        timeout: float = 60.0,
+    ) -> ExecutionStatus:
+        """Start a job and poll until it finishes, fails, or times out.
+
+        Returns the final ExecutionStatus. Raises TimeoutError on timeout.
+        """
+        job = self.start_library_job_definition(
+            job_definition_id=job_definition_id,
+            library_path=library_path,
+        )
+        return self._wait_for_job_status(
+            job_id=job.job_id,
+            target_statuses=[
+                ExecutionStatus.FINISHED,
+                ExecutionStatus.FAILED,
+                ExecutionStatus.CANCELED,
+            ],
+            poll_interval=poll_interval,
+            timeout=timeout,
+        )
