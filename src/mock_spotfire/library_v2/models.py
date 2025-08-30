@@ -1,3 +1,5 @@
+"""Pydantic-lite dataclasses used by the mock Library v2 server."""
+
 from dataclasses import dataclass, field
 from enum import Enum
 

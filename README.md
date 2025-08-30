@@ -2,6 +2,8 @@
 
 Spotfire Community is a Python package for working with the Spotfire Library REST API (v2) and DXP files.
 
+It also includes an Automation Services client for starting and monitoring jobs.
+
 ## Installation
 
 Install from PyPI (recommended):
@@ -46,6 +48,32 @@ file_id = client.upload_file(
 print("uploaded:", file_id)
 ```
 
+### Automation Services Client
+
+Start and monitor Automation Services jobs:
+
+```python
+from spotfire_community.automation_services import (
+	AutomationServicesClient,
+	JobDefinition,
+	OpenAnalysisTask,
+)
+
+client = AutomationServicesClient(
+	spotfire_url="https://your-spotfire-host",
+	client_id="YOUR_CLIENT_ID",
+	client_secret="YOUR_CLIENT_SECRET",
+)
+
+# Build a minimal job definition
+job_def = JobDefinition()
+job_def.add_task(OpenAnalysisTask(path="/Samples/Analysis.dxp"))
+
+# Start and wait for completion
+status = client.start_job_definition_and_wait(job_def, poll_interval=1, timeout=120)
+print("status:", status)
+```
+
 ### DXP Utilities
 
 Inspect and repackage DXP files:
@@ -68,20 +96,30 @@ For development and testing (requires [uv](https://github.com/astral-sh/uv)):
 uv sync --dev
 ```
 
-### Mock Library v2 API and Tests
+### Mock APIs and Tests
 
-The package includes a FastAPI mock server for deterministic tests (not included in the PyPI package):
+The repo includes a FastAPI mock server for deterministic tests (not included in the PyPI package):
 - Router and handlers: `src/mock_spotfire/library_v2/paths.py`
 - Models: `src/mock_spotfire/library_v2/models.py`
 - Errors: `src/mock_spotfire/library_v2/errors.py`
 - In-memory state: `src/mock_spotfire/library_v2/state.py`
 
+Automation Services (v1) mock:
+- Router and handlers: `src/mock_spotfire/automation_services_v1/paths.py`
+- Models: `src/mock_spotfire/automation_services_v1/models.py`
+- Errors: `src/mock_spotfire/automation_services_v1/errors.py`
+- In-memory state: `src/mock_spotfire/automation_services_v1/state.py`
+
 Endpoints:
-- `POST /spotfire/oauth2/token`
-- `GET/POST /spotfire/api/rest/library/v2/items`
-- `DELETE /spotfire/api/rest/library/v2/items/{id}`
-- `POST /spotfire/api/rest/library/v2/upload`
-- `POST /spotfire/api/rest/library/v2/upload/{jobId}`
+- Core: `POST /spotfire/oauth2/token`
+- Library v2: `GET/POST /spotfire/api/rest/library/v2/items`
+- Library v2: `DELETE /spotfire/api/rest/library/v2/items/{id}`
+- Library v2: `POST /spotfire/api/rest/library/v2/upload`
+- Library v2: `POST /spotfire/api/rest/library/v2/upload/{jobId}`
+- Automation Services v1: `GET /spotfire/api/rest/as/job/status/{job_id}`
+- Automation Services v1: `POST /spotfire/api/rest/as/job/abort/{job_id}`
+- Automation Services v1: `POST /spotfire/api/rest/as/job/start-content`
+- Automation Services v1: `POST /spotfire/api/rest/as/job/start-library`
 
 Tests use `fastapi.testclient.TestClient` and monkeypatch `requests.Session` so the client talks to the mock app in‑memory. See `tests/library/upload/*.py`.
 

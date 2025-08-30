@@ -1,11 +1,13 @@
+"""Client for Spotfire Library REST API (v2)."""
+
 import logging
 import requests
 from .._core import SpotfireRequestsSession
 
 from .models import (
     ItemType,
-    Scope,
 )
+from .._core.rest import authenticate, Scope
 from .errors import ItemNotFoundError
 
 
@@ -42,34 +44,19 @@ class LibraryClient:
             Exception: If authentication or connection fails.
         """
         self._url = f"{spotfire_url.rstrip('/')}/spotfire"
-        self._timeout = timeout
 
         self._requests_session = SpotfireRequestsSession(timeout=timeout)
 
-        # Try to get the token to check if the credentials are valid
         try:
-            token_response = self._requests_session.post(
-                f"{self._url}/oauth2/token",
-                auth=(client_id, client_secret),
-                params={
-                    "grant_type": "client_credentials",
-                    "scope": f"{Scope.LIBRARY_READ} {Scope.LIBRARY_WRITE}",
-                },
+            authenticate(
+                requests_session=self._requests_session,
+                url=self._url,
+                scopes=[Scope.LIBRARY_READ, Scope.LIBRARY_WRITE],
+                client_id=client_id,
+                client_secret=client_secret,
             )
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"Failed to connect to Spotfire server: {e}")
-
-        if token_response.status_code != 200:
-            raise Exception(
-                f"Failed to authenticate with Spotfire server: {token_response.status_code} - {token_response.text}"
-            )
-
-        self._requests_session.headers.update(
-            {
-                "Authorization": f"Bearer {token_response.json()['access_token']}",
-                "Accept": "application/json",
-            }
-        )
+        except Exception as e:
+            raise Exception(f"Failed to authenticate with Spotfire server: {e}")
 
     def _get_folder_id(self, path: str) -> str:
         """
@@ -94,18 +81,14 @@ class LibraryClient:
             },
         )
 
-        if response.status_code != 200:
+        if response.status_code == 404:
+            raise ItemNotFoundError(f"Folder not found: {path}")
+        elif response.status_code != 200:
             raise Exception(
                 f"Error fetching folder ID: {response.status_code} - {response.text}"
             )
 
         data = response.json()
-
-        if error := data.get("error"):
-            if error.get("code") == "not_found":
-                raise ItemNotFoundError(f"Folder not found: {path}")
-            else:
-                raise Exception(f"Error fetching folder ID: {error}")
 
         return data["items"][0]["id"]
 
@@ -356,7 +339,7 @@ class LibraryClient:
             if ignore_missing:
                 logger.info("Folder '%s' not found. No action taken.", path)
                 return
-            raise
+            raise ItemNotFoundError(message="Folder not found")
 
         self._delete_item_by_id(folder_id)
         logger.info("Folder '%s' deleted successfully.", path)

@@ -14,7 +14,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from mock_spotfire.library_v2 import app  # noqa: E402
+from mock_spotfire import app
 
 
 class RequestsCompatibleTestClient(TestClient):
@@ -43,9 +43,16 @@ def test_client() -> RequestsCompatibleTestClient:
 @pytest.fixture(autouse=True)
 def patch_requests_session(monkeypatch: MonkeyPatch, test_client: TestClient):
     import spotfire_community.library.client as lib_client
+    import spotfire_community.automation_services.client as automation_services_client
 
     monkeypatch.setattr(
         lib_client,
+        "SpotfireRequestsSession",
+        lambda timeout=None: test_client,  # type: ignore[misc]
+    )
+
+    monkeypatch.setattr(
+        automation_services_client,
         "SpotfireRequestsSession",
         lambda timeout=None: test_client,  # type: ignore[misc]
     )

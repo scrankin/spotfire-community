@@ -15,6 +15,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "pydantic>=2.11.7",
     "requests>=2.32.5",
 ]
 keywords = ["spotfire", "dxp", "rest", "library", "tibco"]
@@ -44,6 +45,7 @@ dev = [
     "fastapi>=0.112.2",
     "uvicorn>=0.30.6",
     "httpx>=0.28.1",
+    "pytest-cov>=6.2.1",
 ]
 
 [tool.pyright]
