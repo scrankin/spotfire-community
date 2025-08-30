@@ -13,9 +13,9 @@ class JobNotFoundError(HTTPException):
         super().__init__(status_code=404, detail=f"Job not Found")
 
 
-class EmptyJobBodyError(HTTPException):
+class InvalidJobDefinitionXMLError(HTTPException):
     def __init__(self):
-        super().__init__(status_code=400, detail=f"Empty job body")
+        super().__init__(status_code=400, detail=f"Invalid job definition XML")
 
 
 class InvalidContentType(HTTPException):
@@ -45,7 +45,7 @@ class MissingArgumentsError(HTTPException):
 
 __all__ = [
     "JobNotFoundError",
-    "EmptyJobBodyError",
+    "InvalidJobDefinitionXMLError",
     "InvalidContentType",
     "InvalidJobXMLError",
     "InvalidJobDefinitionError",

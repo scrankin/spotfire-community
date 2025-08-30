@@ -35,9 +35,15 @@ class JobDefinitionNotFoundError(Exception):
             super().__init__("Job definition not found, no parameters provided")
 
 
+class InvalidJobDefinitionXMLError(Exception):
+    def __init__(self):
+        super().__init__("Invalid job definition XML")
+
+
 __all__ = [
     "JobNotFoundError",
     "InvalidJobIdError",
     "InvalidJobDefinitionIdError",
     "JobDefinitionNotFoundError",
+    "InvalidJobDefinitionXMLError",
 ]

@@ -3,11 +3,12 @@ from fastapi import (
     Query,
     Request,
 )
+from xml.etree import ElementTree
 
 from .errors import (
     InvalidJobIdError,
     JobNotFoundError,
-    EmptyJobBodyError,
+    InvalidJobDefinitionXMLError,
     InvalidContentType,
     InvalidJobDefinitionError,
     InvalidJobStatusError,
@@ -57,14 +58,19 @@ def cancel_job(
 
 @router.post("/job/start-content")
 async def start_xml_job(request: Request):
-    if content_type := request.headers.get("content-type") != "application/xml":
+    if (content_type := request.headers.get("content-type")) != "application/xml":
         raise InvalidContentType(
             f"Content-Type should be application/xml, received {content_type}"
         )
     body = await request.body()
-    if not body.strip():
-        raise EmptyJobBodyError()
-    # TODO: add check for valid xml
+    if len(body.strip()) == 0:
+        raise InvalidJobDefinitionXMLError()
+    try:
+        ElementTree.fromstring(body.decode("utf-8"))
+        if "return-invalid" in body.decode("utf-8"):
+            raise InvalidJobDefinitionXMLError()
+    except ElementTree.ParseError:
+        raise InvalidJobDefinitionXMLError()
     job = state.add_new_job()
     return ExecutionStatusResponse(
         jobId=job.id, statusCode=job.status, message="placeholder"

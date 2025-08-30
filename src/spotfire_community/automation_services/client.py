@@ -7,8 +7,10 @@ from .errors import (
     InvalidJobIdError,
     InvalidJobDefinitionIdError,
     JobDefinitionNotFoundError,
+    InvalidJobDefinitionXMLError,
 )
 from .models import ExecutionStatusResponse, ExecutionStatus
+from ._xml import JobDefinition
 
 
 class AutomationServicesClient:
@@ -34,10 +36,6 @@ class AutomationServicesClient:
             client_secret=client_secret,
         )
 
-    def _start_job_with_definition(self): ...
-
-    def _start_job_from_library_path(self): ...
-
     def get_job_status(
         self,
         job_id: str,
@@ -53,7 +51,7 @@ class AutomationServicesClient:
     def cancel_job(
         self,
         job_id: str,
-    ):
+    ) -> ExecutionStatus:
         if not is_valid_uuid(job_id):
             raise InvalidJobIdError(job_id)
         response = self._requests_session.post(f"{self._url}/job/abort/{job_id}")
@@ -67,7 +65,7 @@ class AutomationServicesClient:
         *,
         job_definition_id: Optional[str] = None,
         library_path: Optional[str] = None,
-    ):
+    ) -> ExecutionStatus:
         if job_definition_id is not None and not is_valid_uuid(job_definition_id):
             raise InvalidJobDefinitionIdError(job_definition_id)
         response = self._requests_session.post(
@@ -84,4 +82,18 @@ class AutomationServicesClient:
                 job_definition_id=job_definition_id,
                 library_path=library_path,
             )
+        return data.statusCode
+
+    def start_job_definition(
+        self,
+        job_definition: JobDefinition,
+    ) -> ExecutionStatus:
+        response = self._requests_session.post(
+            url=f"{self._url}/job/start-content",
+            data=job_definition.as_bytes(),
+            headers={"Content-Type": "application/xml"},
+        )
+        if response.status_code == 400:
+            raise InvalidJobDefinitionXMLError()
+        data = ExecutionStatusResponse(**response.json())
         return data.statusCode

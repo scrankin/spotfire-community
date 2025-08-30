@@ -17,7 +17,7 @@ class JobDefinition:
 
     def serialize(self) -> Element:
         element = Element("as:Job")
-        element.set("xmlns", "urn:tibco:spotfire.dxp.automation.jobs")
+        element.set("xmlns:as", "urn:tibco:spotfire.dxp.automation.jobs")
         tasks_element = Element("as:Tasks")
         for task in self._tasks:
             tasks_element.append(task.serialize())
