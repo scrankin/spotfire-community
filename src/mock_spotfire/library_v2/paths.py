@@ -8,13 +8,8 @@ from .errors import ErrorCode, error_response
 from .models import LibraryItem, UploadJob
 from .state import state
 
+
 router = APIRouter()
-
-
-@router.post("/spotfire/oauth2/token")
-def oauth2_token(grant_type: str = Query("client_credentials"), scope: str = Query("")):
-    # Minimal token endpoint to satisfy LibraryClient authentication.
-    return {"access_token": "mock-token", "token_type": "bearer"}
 
 
 @router.get("/spotfire/api/rest/library/v2/items")
@@ -23,14 +18,13 @@ def get_items(
     item_type: str | None = Query(None, alias="type"),
     maxResults: int | None = Query(None),
 ) -> Any:
+    # For testing
+    if path == "return-500":
+        raise HTTPException(status_code=500, detail="Fake Internal Server Error")
     if path is not None:
         item_id = state.get_path(path)
         if item_id is None:
-            return error_response(
-                status_code=200,
-                code=ErrorCode.NOT_FOUND,
-                message=f"Path not found: {path}",
-            )
+            raise HTTPException(status_code=404, detail="Item not found")
         item = state.items[item_id]
         return {"items": [{"id": item.id, "title": item.title, "type": item.type}]}
 
@@ -47,6 +41,9 @@ def get_items(
 @router.post("/spotfire/api/rest/library/v2/items")
 def create_item(payload: dict[str, Any]) -> JSONResponse:
     title = payload.get("title")
+    if title == "return-500":
+        raise HTTPException(status_code=500, detail="Fake Internal Server Error")
+
     item_type = payload.get("type")
     parent_id = payload.get("parentId")
     description = payload.get("description", "")
@@ -187,3 +184,8 @@ async def upload_chunk(
         return {"item": {"id": item_id}}
 
     return {"status": "chunk received", "chunk": chunk_index}
+
+
+__all__ = [
+    "router",
+]
