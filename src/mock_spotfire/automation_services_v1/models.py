@@ -1,28 +1,7 @@
 from dataclasses import dataclass, field
 import time
-from enum import Enum
 
-
-class ExecutionStatus(Enum):
-    """Execution status values used by Spotfire Automation Services."""
-
-    NOT_SET = "NotSet"
-    QUEUED = "Queued"
-    IN_PROGRESS = "InProgress"
-    FINISHED = "Finished"
-    FAILED = "Failed"
-    MISSING = "Missing"
-    BUSY = "Busy"
-    CANCELED = "Canceled"
-
-
-@dataclass
-class ExecutionStatusResponse:
-    """Response wrapper returned by status/creation endpoints."""
-
-    statusCode: ExecutionStatus
-    message: str
-    jobId: str
+from spotfire_community.automation_services.models import ExecutionStatus
 
 
 @dataclass
@@ -43,8 +22,6 @@ class JobDefinition:
 
 
 __all__ = [
-    "ExecutionStatus",
-    "ExecutionStatusResponse",
     "Job",
     "JobDefinition",
 ]

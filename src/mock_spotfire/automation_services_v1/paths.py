@@ -21,9 +21,13 @@ from .errors import (
     InvalidJobStatusError,
     MissingArgumentsError,
 )
-from .models import ExecutionStatusResponse, JobDefinition, ExecutionStatus
+from .models import JobDefinition, ExecutionStatus
 from .state import state
 from spotfire_community._core.validation import is_valid_uuid
+from spotfire_community.automation_services.models import (
+    ExecutionStatusResponse,
+    ExecutionStatus,
+)
 
 
 router = APIRouter()
@@ -54,8 +58,10 @@ def job_status(
         if time.monotonic() - job.created_at > 1:
             job.status = ExecutionStatus.FINISHED
     return ExecutionStatusResponse(
-        jobId=job.id, statusCode=job.status, message="placeholder"
-    )
+        job_id=job.id,
+        status_code=job.status,
+        message="placeholder",
+    ).model_dump(by_alias=True)
 
 
 @router.post("/job/abort/{job_id}")
@@ -73,8 +79,10 @@ def cancel_job(
         raise JobNotFoundError()
     state.cancel_job(job)
     return ExecutionStatusResponse(
-        jobId=job.id, statusCode=job.status, message="placeholder"
-    )
+        job_id=job.id,
+        status_code=job.status,
+        message="placeholder",
+    ).model_dump(by_alias=True)
 
 
 @router.post("/job/start-content")
@@ -100,8 +108,10 @@ async def start_xml_job(request: Request):
         raise InvalidJobDefinitionXMLError()
     job = state.add_new_job()
     return ExecutionStatusResponse(
-        jobId=job.id, statusCode=job.status, message="placeholder"
-    )
+        job_id=job.id,
+        status_code=job.status,
+        message="placeholder",
+    ).model_dump(by_alias=True)
 
 
 @router.post("/job/start-library")
@@ -134,17 +144,17 @@ def start_library_job(
 
     if job_definition is None:
         return ExecutionStatusResponse(
-            jobId="00000000-0000-0000-0000-000000000000",
-            statusCode=ExecutionStatus.FAILED,
+            job_id="00000000-0000-0000-0000-000000000000",
+            status_code=ExecutionStatus.FAILED,
             message="Job file not found or no access.",
-        )
+        ).model_dump(by_alias=True)
 
     job = state.add_new_job()
     return ExecutionStatusResponse(
-        jobId=job.id,
-        statusCode=job.status,
+        job_id=job.id,
+        status_code=job.status,
         message="placeholder",
-    )
+    ).model_dump(by_alias=True)
 
 
 @router.post("/job/_set_job_status")

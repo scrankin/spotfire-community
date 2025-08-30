@@ -1,6 +1,6 @@
 """Public models for Automation Services client responses and enums."""
 
-from dataclasses import dataclass
+from pydantic import BaseModel, ConfigDict
 from enum import StrEnum
 
 
@@ -17,10 +17,13 @@ class ExecutionStatus(StrEnum):
     CANCELED = "Canceled"
 
 
-@dataclass
-class ExecutionStatusResponse:
+class ExecutionStatusResponse(BaseModel):
     """Response payload returned by status and start endpoints."""
 
-    statusCode: ExecutionStatus
+    model_config = ConfigDict(
+        alias_generator=lambda s: "".join(part.title() for part in s.split("_")),
+        populate_by_name=True,
+    )
+    status_code: ExecutionStatus
     message: str
-    jobId: str
+    job_id: str

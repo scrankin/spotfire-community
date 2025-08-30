@@ -55,8 +55,8 @@ class AutomationServicesClient:
         response = self._requests_session.get(f"{self._url}/job/status/{job_id}")
         if response.status_code == 404:
             raise JobNotFoundError(job_id)
-        data = ExecutionStatusResponse(**response.json())
-        return data.statusCode
+        data = ExecutionStatusResponse.model_validate(response.json())
+        return data.status_code
 
     def cancel_job(
         self,
@@ -68,8 +68,8 @@ class AutomationServicesClient:
         response = self._requests_session.post(f"{self._url}/job/abort/{job_id}")
         if response.status_code == 404:
             raise JobNotFoundError(job_id)
-        data = ExecutionStatusResponse(**response.json())
-        return data.statusCode
+        data = ExecutionStatusResponse.model_validate(response.json())
+        return data.status_code
 
     def start_library_job_definition(
         self,
@@ -85,9 +85,9 @@ class AutomationServicesClient:
             params={"id": job_definition_id, "path": library_path},
         )
 
-        data = ExecutionStatusResponse(**response.json())
+        data = ExecutionStatusResponse.model_validate(response.json())
         if (
-            data.statusCode == ExecutionStatus.FAILED
+            data.status_code == ExecutionStatus.FAILED
             and data.message == "Job file not found or no access."
         ):
             raise JobDefinitionNotFoundError(
@@ -108,7 +108,7 @@ class AutomationServicesClient:
         )
         if response.status_code == 400:
             raise InvalidJobDefinitionXMLError()
-        data = ExecutionStatusResponse(**response.json())
+        data = ExecutionStatusResponse.model_validate(response.json())
         return data
 
     def start_job_definition_and_wait(
@@ -125,7 +125,7 @@ class AutomationServicesClient:
         job = self.start_job_definition(job_definition)
         start_time = time.monotonic()
         while True:
-            status = self.get_job_status(job.jobId)
+            status = self.get_job_status(job.job_id)
             if status in (
                 ExecutionStatus.FINISHED,
                 ExecutionStatus.FAILED,
@@ -134,6 +134,6 @@ class AutomationServicesClient:
                 return status
             if time.monotonic() - start_time > timeout:
                 raise TimeoutError(
-                    f"Job {job.jobId} did not finish within {timeout} seconds."
+                    f"Job {job.job_id} did not finish within {timeout} seconds."
                 )
             time.sleep(poll_interval)

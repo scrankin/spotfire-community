@@ -481,6 +481,7 @@ name = "spotfire-community"
 version = "0.1.2"
 source = { editable = "." }
 dependencies = [
+    { name = "pydantic" },
     { name = "requests" },
 ]
 
@@ -494,7 +495,10 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "requests", specifier = ">=2.32.5" }]
+requires-dist = [
+    { name = "pydantic", specifier = ">=2.11.7" },
+    { name = "requests", specifier = ">=2.32.5" },
+]
 
 [package.metadata.requires-dev]
 dev = [

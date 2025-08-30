@@ -15,6 +15,7 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
+    "pydantic>=2.11.7",
     "requests>=2.32.5",
 ]
 keywords = ["spotfire", "dxp", "rest", "library", "tibco"]

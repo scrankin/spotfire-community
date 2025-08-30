@@ -36,4 +36,4 @@ def test_job_cancel_behavior(test_client: TestClient):
     )
 
     # Check status from mock api
-    assert job.statusCode == ExecutionStatus.IN_PROGRESS
+    assert job.status_code == ExecutionStatus.IN_PROGRESS

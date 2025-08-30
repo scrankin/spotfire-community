@@ -23,7 +23,7 @@ def test_job_start_behavior(test_client: TestClient):
     job = client.start_job_definition(job_definition=job_definition)
 
     # Check status from mock api
-    assert job.statusCode == ExecutionStatus.IN_PROGRESS
+    assert job.status_code == ExecutionStatus.IN_PROGRESS
 
 
 def test_invalid_job_start_behavior(test_client: TestClient):
