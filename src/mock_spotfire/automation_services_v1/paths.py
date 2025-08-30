@@ -34,9 +34,9 @@ def job_status(
     job = state.get_job(job_id=job_id)
     if job is None:
         raise JobNotFoundError()
-    # If job is IN_PROGRESS and 5s have passed, mark as FINISHED
+    # If job is IN_PROGRESS and 3s have passed, mark as FINISHED
     if job.status == ExecutionStatus.IN_PROGRESS:
-        if time.monotonic() - job.created_at > 5:
+        if time.monotonic() - job.created_at > 3:
             job.status = ExecutionStatus.FINISHED
     return ExecutionStatusResponse(
         jobId=job.id, statusCode=job.status, message="placeholder"
