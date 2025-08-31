@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from .paths import oauth2_token
+from .routes import oauth2_token
 
 
 router = APIRouter()

@@ -99,13 +99,13 @@ uv sync --dev
 ### Mock APIs and Tests
 
 The repo includes a FastAPI mock server for deterministic tests (not included in the PyPI package):
-- Router and handlers: `src/mock_spotfire/library_v2/paths.py`
+- Router and handlers: `src/mock_spotfire/library_v2/routes/`
 - Models: `src/mock_spotfire/library_v2/models.py`
 - Errors: `src/mock_spotfire/library_v2/errors.py`
 - In-memory state: `src/mock_spotfire/library_v2/state.py`
 
 Automation Services (v1) mock:
-- Router and handlers: `src/mock_spotfire/automation_services_v1/paths.py`
+- Router and handlers: `src/mock_spotfire/automation_services_v1/routes/`
 - Models: `src/mock_spotfire/automation_services_v1/models.py`
 - Errors: `src/mock_spotfire/automation_services_v1/errors.py`
 - In-memory state: `src/mock_spotfire/automation_services_v1/state.py`
