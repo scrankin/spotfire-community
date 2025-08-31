@@ -5,25 +5,36 @@ from spotfire_community.library.client import LibraryClient
 from spotfire_community.library.errors import ItemNotFoundError
 
 
-def test_upload_overwrite_behavior(test_client: TestClient):
+def test_get_folder_id_missing_raises(test_client: TestClient):
     client = LibraryClient(
         spotfire_url="http://testserver",
         client_id="id",
         client_secret="secret",
     )
-
     with pytest.raises(ItemNotFoundError):
         client._get_folder_id(  # pyright: ignore[reportPrivateUsage]
             path="does-not-exist",
         )
 
-    # Second upload without overwrite should fail at finalize; client raises Exception
+
+def test_get_folder_id_500_raises(test_client: TestClient):
+    client = LibraryClient(
+        spotfire_url="http://testserver",
+        client_id="id",
+        client_secret="secret",
+    )
     with pytest.raises(Exception):
         client._get_folder_id(  # pyright: ignore[reportPrivateUsage]
             path="return-500",
         )
 
-    # With overwrite=True it should succeed
+
+def test_get_folder_id_root_success(test_client: TestClient):
+    client = LibraryClient(
+        spotfire_url="http://testserver",
+        client_id="id",
+        client_secret="secret",
+    )
     root_id = client._get_folder_id(  # pyright: ignore[reportPrivateUsage]
         path="/",
     )

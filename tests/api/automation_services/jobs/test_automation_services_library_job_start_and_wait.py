@@ -8,18 +8,24 @@ from spotfire_community.automation_services import (
 from spotfire_community.automation_services.models import ExecutionStatus
 
 
-def test_start_library_job_definition_and_wait(test_client: TestClient):
+def test_start_library_job_definition_and_wait_times_out(test_client: TestClient):
     client = AutomationServicesClient(
         spotfire_url="http://testserver",
         client_id="dummy",
         client_secret="dummy",
     )
-
     with pytest.raises(TimeoutError):
         client.start_library_job_definition_and_wait(
             job_definition_id=EXISTING_JOB_DEFINITION_ID, poll_interval=0.1, timeout=0.5
         )
 
+
+def test_start_library_job_definition_and_wait_finishes(test_client: TestClient):
+    client = AutomationServicesClient(
+        spotfire_url="http://testserver",
+        client_id="dummy",
+        client_secret="dummy",
+    )
     status = client.start_library_job_definition_and_wait(
         job_definition_id=EXISTING_JOB_DEFINITION_ID,
         library_path="dummy_path",
