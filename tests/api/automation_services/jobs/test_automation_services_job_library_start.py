@@ -11,29 +11,53 @@ from spotfire_community.automation_services.errors import (
 from spotfire_community.automation_services.models import ExecutionStatus
 
 
-def test_job_cancel_behavior(test_client: TestClient):
+def test_start_library_invalid_id_format_raises(test_client: TestClient):
     client = AutomationServicesClient(
         spotfire_url="http://testserver",
         client_id="id",
         client_secret="secret",
     )
-
-    # Test non-existent job id
     with pytest.raises(InvalidJobDefinitionIdError):
         client.start_library_job_definition(job_definition_id="invalid_job_id")
 
+
+def test_start_library_unknown_id_raises(test_client: TestClient):
+    client = AutomationServicesClient(
+        spotfire_url="http://testserver",
+        client_id="id",
+        client_secret="secret",
+    )
     with pytest.raises(JobDefinitionNotFoundError):
         client.start_library_job_definition(job_definition_id=str(uuid4()))
 
+
+def test_start_library_unknown_path_raises(test_client: TestClient):
+    client = AutomationServicesClient(
+        spotfire_url="http://testserver",
+        client_id="id",
+        client_secret="secret",
+    )
     with pytest.raises(JobDefinitionNotFoundError):
         client.start_library_job_definition(library_path="/non-existant")
 
+
+def test_start_library_missing_args_raises(test_client: TestClient):
+    client = AutomationServicesClient(
+        spotfire_url="http://testserver",
+        client_id="id",
+        client_secret="secret",
+    )
     with pytest.raises(JobDefinitionNotFoundError):
         client.start_library_job_definition()
 
+
+def test_start_library_success_returns_in_progress(test_client: TestClient):
+    client = AutomationServicesClient(
+        spotfire_url="http://testserver",
+        client_id="id",
+        client_secret="secret",
+    )
     job = client.start_library_job_definition(
         job_definition_id=EXISTING_JOB_DEFINITION_ID
     )
-
-    # Check status from mock api
     assert job.status_code == ExecutionStatus.IN_PROGRESS
