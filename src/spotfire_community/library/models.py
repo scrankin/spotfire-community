@@ -1,4 +1,8 @@
 from enum import StrEnum
+from pydantic import BaseModel, ConfigDict
+from typing import Optional
+
+from .._core.rest.models import User
 
 
 class ItemType(StrEnum):
@@ -29,7 +33,36 @@ class ConflictResolution(StrEnum):
     KEEP_BOTH = "KeepBoth"
 
 
+class LibraryItem(BaseModel):
+    """
+    Base model for library items.
+    """
+
+    model_config = ConfigDict(
+        alias_generator=lambda s: s.split("_")[0]
+        + "".join(part.title() for part in s.split("_")[1:]),
+        populate_by_name=True,
+    )
+
+    id: str
+    title: str
+    type: ItemType
+    created_by: User
+    created: int
+    modified_by: User
+    modified: int
+    parent_id: str
+    size: int
+    version_id: str
+    is_favorite: bool
+
+    accessed: Optional[int] = None
+    path: Optional[str] = None
+    description: Optional[str] = None
+
+
 __all__ = [
     "ItemType",
     "ConflictResolution",
+    "LibraryItem",
 ]

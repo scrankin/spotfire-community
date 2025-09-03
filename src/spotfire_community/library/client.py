@@ -6,6 +6,7 @@ from .._core import SpotfireRequestsSession
 
 from .models import (
     ItemType,
+    LibraryItem,
 )
 from .._core.rest import authenticate, Scope
 from .errors import ItemNotFoundError
@@ -343,6 +344,44 @@ class LibraryClient:
 
         self._delete_item_by_id(folder_id)
         logger.info("Folder '%s' deleted successfully.", path)
+
+    def get_all_dashboards_in_folder(
+        self,
+        folder_path: str,
+    ) -> list[LibraryItem]:
+        """
+        Retrieves all dashboards in a given folder.
+
+        Args:
+            folder_path (str): The path of the folder to list dashboards from.
+
+        Returns:
+            List[LibraryItem]: A list of LibraryItem objects representing the dashboards.
+
+        Raises:
+            ItemNotFoundError: If the folder is not found.
+            Exception: If the request fails for other reasons.
+        """
+        folder_id = self._get_folder_id(folder_path)
+
+        response = self._requests_session.get(
+            f"{self._url}/api/rest/library/v2/items",
+            params={
+                "searchExpression": "type:dxp",
+                "locationId": folder_id,
+                "maxResults": 1000,  # Arbitrary large number; api does not seem to have pagination
+                "attributes": "path",
+            },
+        )
+
+        if response.status_code != 200:
+            raise Exception(
+                f"Error fetching dashboards: {response.status_code} - {response.text}"
+            )
+
+        data = response.json()
+        items = data.get("items", [])
+        return [LibraryItem.model_validate(item) for item in items]
 
 
 __all__ = [
