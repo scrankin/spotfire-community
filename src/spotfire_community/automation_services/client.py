@@ -48,12 +48,12 @@ class AutomationServicesClient:
         target_statuses: list[ExecutionStatus],
         poll_interval: float = 1.0,
         timeout: float = 30.0,
-    ) -> ExecutionStatus:
+    ) -> ExecutionStatusResponse:
         """Wait for a job to reach a specific status."""
         start_time = time.monotonic()
         while time.monotonic() - start_time < timeout:
             status = self.get_job_status(job_id)
-            if status in target_statuses:
+            if status.status_code in target_statuses:
                 return status
             time.sleep(poll_interval)
         raise TimeoutError(
@@ -63,7 +63,7 @@ class AutomationServicesClient:
     def get_job_status(
         self,
         job_id: str,
-    ) -> ExecutionStatus:
+    ) -> ExecutionStatusResponse:
         """Fetch the current status of a job by id.
 
         Raises InvalidJobIdError for non-UUID input and JobNotFoundError for 404.
@@ -74,7 +74,7 @@ class AutomationServicesClient:
         if response.status_code == 404:
             raise JobNotFoundError(job_id)
         data = ExecutionStatusResponse.model_validate(response.json())
-        return data.status_code
+        return data
 
     def cancel_job(
         self,
@@ -135,7 +135,7 @@ class AutomationServicesClient:
         *,
         poll_interval: float = 1.0,
         timeout: float = 60.0,
-    ) -> ExecutionStatus:
+    ) -> ExecutionStatusResponse:
         """Start a job and poll until it finishes, fails, or times out.
 
         Returns the final ExecutionStatus. Raises TimeoutError on timeout.
@@ -159,7 +159,7 @@ class AutomationServicesClient:
         library_path: Optional[str] = None,
         poll_interval: float = 1.0,
         timeout: float = 60.0,
-    ) -> ExecutionStatus:
+    ) -> ExecutionStatusResponse:
         """Start a job and poll until it finishes, fails, or times out.
 
         Returns the final ExecutionStatus. Raises TimeoutError on timeout.

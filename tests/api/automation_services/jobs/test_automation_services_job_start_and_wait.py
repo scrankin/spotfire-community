@@ -33,4 +33,4 @@ def test_start_job_definition_and_wait_finishes(test_client: TestClient):
     status = client.start_job_definition_and_wait(
         job_definition=job_definition, poll_interval=0.1, timeout=2
     )
-    assert status == ExecutionStatus.FINISHED
+    assert status.status_code == ExecutionStatus.FINISHED

@@ -40,4 +40,4 @@ def test_get_job_status_success_returns_status(test_client: TestClient):
         client_secret="secret",
     )
     status = client.get_job_status(EXISTING_JOB_ID)
-    assert status == ExecutionStatus.QUEUED
+    assert status.status_code == ExecutionStatus.QUEUED
