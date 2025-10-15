@@ -14,8 +14,9 @@ class ItemType(StrEnum):
         DXP (str): Represents a Spotfire DXP file.
     """
 
-    FOLDER = "spotfire.folder"
     DXP = "spotfire.dxp"
+    FOLDER = "spotfire.folder"
+    MOD = "spotfire.mod"
 
 
 class ConflictResolution(StrEnum):
