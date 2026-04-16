@@ -227,7 +227,7 @@ class LibraryClient:
         chunk_index: int,
         *,
         finish: bool = False,
-    ) -> dict:
+    ) -> str | None:
         """
         Send a single chunk to an upload job.
 
@@ -238,7 +238,7 @@ class LibraryClient:
             finish: Whether this is the final chunk.
 
         Returns:
-            The JSON response from the API.
+            The uploaded item ID when ``finish`` is True, otherwise None.
         """
         upload_response = self._requests_session.post(
             f"{self._url}/api/rest/library/v2/upload/{job_id}",
@@ -255,7 +255,9 @@ class LibraryClient:
                 f"Failed to upload chunk {chunk_index}: {upload_response.status_code} - {upload_response.text}"
             )
 
-        return upload_response.json()
+        if finish:
+            return upload_response.json()["item"]["id"]
+        return None
 
     def _add_data_to_upload_job(
         self,
@@ -272,8 +274,9 @@ class LibraryClient:
         Returns:
             str: The ID of the uploaded file.
         """
-        response = self._send_upload_chunk(data, job_id, chunk_index=1, finish=True)
-        return response["item"]["id"]
+        item_id = self._send_upload_chunk(data, job_id, chunk_index=1, finish=True)
+        assert item_id is not None, "finish=True must return item_id"
+        return item_id
 
     def _delete_item_by_id(self, item_id: str) -> None:
         """
@@ -400,10 +403,10 @@ class LibraryClient:
             raise ValueError("data_stream yielded no data")
 
         chunk_index += 1
-        response = self._send_upload_chunk(
+        file_id = self._send_upload_chunk(
             pending_chunk, job_id, chunk_index, finish=True
         )
-        file_id = response["item"]["id"]
+        assert file_id is not None, "finish=True must return item_id"
 
         logger.info("Streaming upload to %s completed with ID: %s", path, file_id)
         return file_id
