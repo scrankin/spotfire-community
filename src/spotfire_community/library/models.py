@@ -17,6 +17,7 @@ class ItemType(StrEnum):
     DXP = "spotfire.dxp"
     FOLDER = "spotfire.folder"
     MOD = "spotfire.mod"
+    SBDF = "spotfire.sbdf"
 
 
 class ConflictResolution(StrEnum):

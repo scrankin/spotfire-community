@@ -1,0 +1,18 @@
+[package]
+name = "tabular-to-sbdf"
+version = "0.1.0"
+edition = "2021"
+description = "CLI to convert CSV/Parquet to Spotfire Binary Data Format (SBDF)"
+license = "MIT"
+
+[[bin]]
+name = "tabular-to-sbdf"
+path = "src/main.rs"
+
+[dependencies]
+# Vendored from https://github.com/pod2co/sbdf (MIT OR Apache-2.0)
+# See ../sbdf-lib/VENDORED.md for attribution details
+sbdf = { path = "../sbdf-lib" }
+csv = "1"
+clap = { version = "4", features = ["derive"] }
+thiserror = "2"
