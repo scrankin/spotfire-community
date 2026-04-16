@@ -391,14 +391,18 @@ class LibraryClient:
                 continue
             if pending_chunk is not None:
                 chunk_index += 1
-                self._send_upload_chunk(pending_chunk, job_id, chunk_index, finish=False)
+                self._send_upload_chunk(
+                    pending_chunk, job_id, chunk_index, finish=False
+                )
             pending_chunk = chunk
 
         if pending_chunk is None:
             raise ValueError("data_stream yielded no data")
 
         chunk_index += 1
-        response = self._send_upload_chunk(pending_chunk, job_id, chunk_index, finish=True)
+        response = self._send_upload_chunk(
+            pending_chunk, job_id, chunk_index, finish=True
+        )
         file_id = response["item"]["id"]
 
         logger.info("Streaming upload to %s completed with ID: %s", path, file_id)
