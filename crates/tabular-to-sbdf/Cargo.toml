@@ -2,7 +2,7 @@
 name = "tabular-to-sbdf"
 version = "0.1.0"
 edition = "2021"
-description = "CLI to convert CSV/Parquet to Spotfire Binary Data Format (SBDF)"
+description = "CLI to convert CSV to Spotfire Binary Data Format (SBDF)"
 license = "MIT"
 
 [[bin]]

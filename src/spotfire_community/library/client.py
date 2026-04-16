@@ -275,7 +275,10 @@ class LibraryClient:
             str: The ID of the uploaded file.
         """
         item_id = self._send_upload_chunk(data, job_id, chunk_index=1, finish=True)
-        assert item_id is not None, "finish=True must return item_id"
+        if item_id is None:
+            raise RuntimeError(
+                "Final upload chunk completed without returning an item ID"
+            )
         return item_id
 
     def _delete_item_by_id(self, item_id: str) -> None:
@@ -406,7 +409,10 @@ class LibraryClient:
         file_id = self._send_upload_chunk(
             pending_chunk, job_id, chunk_index, finish=True
         )
-        assert file_id is not None, "finish=True must return item_id"
+        if file_id is None:
+            raise RuntimeError(
+                "Final upload chunk completed without returning an item ID"
+            )
 
         logger.info("Streaming upload to %s completed with ID: %s", path, file_id)
         return file_id

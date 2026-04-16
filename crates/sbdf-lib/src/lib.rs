@@ -2,10 +2,11 @@ use reader::SbdfReader;
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, io::Cursor, iter};
 use thiserror::Error;
-use writer::SbdfWriter;
 
-pub(crate) mod reader;
-pub(crate) mod writer;
+pub mod reader;
+pub mod writer;
+
+pub use writer::SbdfWriter;
 
 pub const COLUMN_METADATA_NAME: &str = "Name";
 pub const COLUMN_METADATA_TYPE: &str = "DataType";
@@ -654,7 +655,7 @@ impl EncodedBitArray {
     pub fn decode(&self) -> Result<BoolArray, SbdfError> {
         let EncodedBitArray { bit_count, bytes } = self;
 
-        let mut values = Vec::with_capacity(bytes.len() * size_of::<u8>());
+        let mut values = Vec::with_capacity(bytes.len() * u8::BITS as usize);
 
         for byte in bytes.iter() {
             for i in 0..8 {
