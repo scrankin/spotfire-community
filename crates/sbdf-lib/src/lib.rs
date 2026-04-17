@@ -690,4 +690,240 @@ mod tests {
 
         assert_eq!(decoded, bool_array);
     }
+
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
+
+    fn no_props() -> ColumnProperties {
+        ColumnProperties {
+            is_invalid: None,
+            error_code: None,
+            has_replaced_value: None,
+            other: Box::new([]),
+        }
+    }
+
+    fn int_column(name: &str, values: Vec<i32>) -> (ColumnMetadata, ColumnSlice) {
+        let meta = ColumnMetadata {
+            name: name.to_string(),
+            ty: ValueType::Int,
+            other: Box::new([]),
+        };
+        let slice = ColumnSlice {
+            values: EncodedValue::Plain(Object::IntArray(IntArray(values.into_boxed_slice()))),
+            properties: no_props(),
+        };
+        (meta, slice)
+    }
+
+    fn string_column(name: &str, values: Vec<&str>) -> (ColumnMetadata, ColumnSlice) {
+        let meta = ColumnMetadata {
+            name: name.to_string(),
+            ty: ValueType::String,
+            other: Box::new([]),
+        };
+        let slice = ColumnSlice {
+            values: EncodedValue::Plain(Object::StringArray(StringArray(
+                values.iter().map(|s| s.to_string()).collect::<Vec<_>>().into_boxed_slice(),
+            ))),
+            properties: no_props(),
+        };
+        (meta, slice)
+    }
+
+    fn double_column(name: &str, values: Vec<f64>) -> (ColumnMetadata, ColumnSlice) {
+        let meta = ColumnMetadata {
+            name: name.to_string(),
+            ty: ValueType::Double,
+            other: Box::new([]),
+        };
+        let slice = ColumnSlice {
+            values: EncodedValue::Plain(Object::DoubleArray(DoubleArray(values.into_boxed_slice()))),
+            properties: no_props(),
+        };
+        (meta, slice)
+    }
+
+    fn bool_column(name: &str, values: Vec<bool>) -> (ColumnMetadata, ColumnSlice) {
+        let meta = ColumnMetadata {
+            name: name.to_string(),
+            ty: ValueType::Bool,
+            other: Box::new([]),
+        };
+        let slice = ColumnSlice {
+            values: EncodedValue::Plain(Object::BoolArray(BoolArray(values.into_boxed_slice()))),
+            properties: no_props(),
+        };
+        (meta, slice)
+    }
+
+    fn simple_table_metadata(columns: Vec<ColumnMetadata>) -> TableMetadata {
+        let count = columns.len() as i32;
+        TableMetadata {
+            metadata: Box::new([Metadata {
+                name: "TableColumns".to_string(),
+                value: Object::Int(count),
+                default_value: None,
+            }]),
+            columns: columns.into_boxed_slice(),
+        }
+    }
+
+    fn file_header() -> FileHeader {
+        FileHeader { major_version: 1, minor_version: 0 }
+    }
+
+    // ------------------------------------------------------------------
+    // Roundtrip tests
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn roundtrip_single_int_column() {
+        let (meta, slice) = int_column("id", vec![1, 2, 3, 42, -7]);
+        let sbdf = Sbdf {
+            file_header: file_header(),
+            table_metadata: simple_table_metadata(vec![meta]),
+            table_slices: Box::new([TableSlice {
+                column_slices: Box::new([slice]),
+            }]),
+        };
+
+        let bytes = sbdf.to_bytes().unwrap();
+        let parsed = Sbdf::from_bytes(&bytes).unwrap();
+
+        assert_eq!(parsed, sbdf);
+    }
+
+    #[test]
+    fn roundtrip_single_string_column() {
+        let (meta, slice) = string_column("name", vec!["alice", "bob", "charlie", ""]);
+        let sbdf = Sbdf {
+            file_header: file_header(),
+            table_metadata: simple_table_metadata(vec![meta]),
+            table_slices: Box::new([TableSlice {
+                column_slices: Box::new([slice]),
+            }]),
+        };
+
+        let bytes = sbdf.to_bytes().unwrap();
+        let parsed = Sbdf::from_bytes(&bytes).unwrap();
+
+        assert_eq!(parsed, sbdf);
+    }
+
+    #[test]
+    fn roundtrip_mixed_column_types() {
+        let (int_meta, int_slice) = int_column("int_col", vec![10, 20, 30]);
+        let (str_meta, str_slice) = string_column("str_col", vec!["x", "y", "z"]);
+        let (dbl_meta, dbl_slice) = double_column("dbl_col", vec![1.1, 2.2, 3.3]);
+        let (bool_meta, bool_slice) = bool_column("bool_col", vec![true, false, true]);
+
+        let sbdf = Sbdf {
+            file_header: file_header(),
+            table_metadata: simple_table_metadata(vec![int_meta, str_meta, dbl_meta, bool_meta]),
+            table_slices: Box::new([TableSlice {
+                column_slices: Box::new([int_slice, str_slice, dbl_slice, bool_slice]),
+            }]),
+        };
+
+        let bytes = sbdf.to_bytes().unwrap();
+        let parsed = Sbdf::from_bytes(&bytes).unwrap();
+
+        assert_eq!(parsed, sbdf);
+    }
+
+    #[test]
+    fn roundtrip_multiple_slices() {
+        let (meta1, slice1) = int_column("n", vec![1, 2, 3]);
+        let (_, slice2) = int_column("n", vec![4, 5, 6]);
+        let (_, slice3) = int_column("n", vec![7]);
+
+        let sbdf = Sbdf {
+            file_header: file_header(),
+            table_metadata: simple_table_metadata(vec![meta1]),
+            table_slices: Box::new([
+                TableSlice { column_slices: Box::new([slice1]) },
+                TableSlice { column_slices: Box::new([slice2]) },
+                TableSlice { column_slices: Box::new([slice3]) },
+            ]),
+        };
+
+        let bytes = sbdf.to_bytes().unwrap();
+        let parsed = Sbdf::from_bytes(&bytes).unwrap();
+
+        assert_eq!(parsed, sbdf);
+
+        // Verify row counts per slice are preserved.
+        let decoded0 = parsed.table_slices[0].column_slices[0].load_values().unwrap();
+        let decoded1 = parsed.table_slices[1].column_slices[0].load_values().unwrap();
+        let decoded2 = parsed.table_slices[2].column_slices[0].load_values().unwrap();
+        assert!(matches!(decoded0.as_ref(), Object::IntArray(IntArray(a)) if a.len() == 3));
+        assert!(matches!(decoded1.as_ref(), Object::IntArray(IntArray(a)) if a.len() == 3));
+        assert!(matches!(decoded2.as_ref(), Object::IntArray(IntArray(a)) if a.len() == 1));
+    }
+
+    #[test]
+    fn roundtrip_zero_slices() {
+        let (meta, _) = int_column("x", vec![]);
+        let sbdf = Sbdf {
+            file_header: file_header(),
+            table_metadata: simple_table_metadata(vec![meta]),
+            table_slices: Box::new([]),
+        };
+
+        let bytes = sbdf.to_bytes().unwrap();
+        let parsed = Sbdf::from_bytes(&bytes).unwrap();
+
+        assert_eq!(parsed.table_slices.len(), 0);
+    }
+
+    #[test]
+    fn to_bytes_starts_with_file_header_magic() {
+        let (meta, slice) = int_column("v", vec![1]);
+        let sbdf = Sbdf {
+            file_header: file_header(),
+            table_metadata: simple_table_metadata(vec![meta]),
+            table_slices: Box::new([TableSlice { column_slices: Box::new([slice]) }]),
+        };
+
+        let bytes = sbdf.to_bytes().unwrap();
+
+        // First 3 bytes: magic (0xDF 0x5B) + FileHeader section id (0x01)
+        assert_eq!(&bytes[..3], &[0xDF, 0x5B, 0x01]);
+        // Bytes 3-4: major version 1, minor version 0
+        assert_eq!(&bytes[3..5], &[0x01, 0x00]);
+    }
+
+    #[test]
+    fn roundtrip_is_invalid_property() {
+        let (meta, _) = string_column("s", vec!["a", "b", "c"]);
+        let is_invalid = BoolArray(vec![false, true, false].into_boxed_slice())
+            .encode_to_bit_array();
+        let slice = ColumnSlice {
+            values: EncodedValue::Plain(Object::StringArray(StringArray(
+                vec!["a".to_string(), "b".to_string(), "c".to_string()].into_boxed_slice(),
+            ))),
+            properties: ColumnProperties {
+                is_invalid: Some(is_invalid),
+                error_code: None,
+                has_replaced_value: None,
+                other: Box::new([]),
+            },
+        };
+
+        let sbdf = Sbdf {
+            file_header: file_header(),
+            table_metadata: simple_table_metadata(vec![meta]),
+            table_slices: Box::new([TableSlice { column_slices: Box::new([slice]) }]),
+        };
+
+        let bytes = sbdf.to_bytes().unwrap();
+        let parsed = Sbdf::from_bytes(&bytes).unwrap();
+
+        assert_eq!(parsed, sbdf);
+        let props = &parsed.table_slices[0].column_slices[0].properties;
+        let decoded_invalid = props.is_invalid.as_ref().unwrap().decode().unwrap();
+        assert_eq!(decoded_invalid.0.as_ref(), &[false, true, false]);
+    }
 }
