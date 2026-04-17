@@ -134,32 +134,24 @@ impl<'a> SbdfReader<'a> {
         is_packed_array: bool,
     ) -> Result<Object, SbdfError> {
         Ok(match (value_type, count) {
-            (ValueType::Bool, 1) => Object::Bool(self.read_bool()?),
-            (ValueType::Int, 1) => Object::Int(self.read_int()?),
-            (ValueType::Long, 1) => Object::Long(self.read_long()?),
-            (ValueType::Float, 1) => Object::Float(self.read_float()?),
-            (ValueType::Double, 1) => Object::Double(self.read_double()?),
-            (ValueType::DateTime, 1) => Object::DateTime(DateTime(self.read_long()?)),
-            (ValueType::Date, 1) => Object::Date(Date(self.read_long()?)),
-            (ValueType::Time, 1) => Object::Time(self.read_long()?),
-            (ValueType::TimeSpan, 1) => Object::TimeSpan(self.read_long()?),
-            (ValueType::String, 1) => {
-                if is_packed_array {
-                    // Ignore byte size.
-                    let _ = self.read_int()?;
-                }
-
-                Object::String(self.read_string(is_packed_array)?)
+            (ValueType::Bool, 1) if !is_packed_array => Object::Bool(self.read_bool()?),
+            (ValueType::Int, 1) if !is_packed_array => Object::Int(self.read_int()?),
+            (ValueType::Long, 1) if !is_packed_array => Object::Long(self.read_long()?),
+            (ValueType::Float, 1) if !is_packed_array => Object::Float(self.read_float()?),
+            (ValueType::Double, 1) if !is_packed_array => Object::Double(self.read_double()?),
+            (ValueType::DateTime, 1) if !is_packed_array => {
+                Object::DateTime(DateTime(self.read_long()?))
             }
-            (ValueType::Binary, 1) => {
-                if is_packed_array {
-                    // Ignore byte size.
-                    let _ = self.read_int()?;
-                }
-
-                Object::Binary(self.read_bytes(is_packed_array)?.into_boxed_slice())
+            (ValueType::Date, 1) if !is_packed_array => Object::Date(Date(self.read_long()?)),
+            (ValueType::Time, 1) if !is_packed_array => Object::Time(self.read_long()?),
+            (ValueType::TimeSpan, 1) if !is_packed_array => Object::TimeSpan(self.read_long()?),
+            (ValueType::String, 1) if !is_packed_array => {
+                Object::String(self.read_string(false)?)
             }
-            (ValueType::Decimal, 1) => Object::Decimal(self.read_decimal()?),
+            (ValueType::Binary, 1) if !is_packed_array => {
+                Object::Binary(self.read_bytes(false)?.into_boxed_slice())
+            }
+            (ValueType::Decimal, 1) if !is_packed_array => Object::Decimal(self.read_decimal()?),
             (ValueType::Bool, _) => Object::BoolArray(BoolArray(
                 self.read_multiple(count, SbdfReader::read_bool)?
                     .into_boxed_slice(),

@@ -27,6 +27,10 @@ RUN chown $USERNAME:$USERNAME $HOME/.zshrc
 
 USER $USERNAME
 
+# install rustup (stable toolchain)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path
+ENV PATH="/home/$USERNAME/.cargo/bin:$PATH"
+
 # install oh-my-zsh
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended
 

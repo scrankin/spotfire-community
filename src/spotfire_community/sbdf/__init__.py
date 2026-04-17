@@ -1,119 +1,85 @@
 """Helpers for converting tabular data to Spotfire Binary Data Format (SBDF).
 
-This module wraps the ``tabular-to-sbdf`` CLI binary which handles the actual
-CSV-to-SBDF conversion using the pod2co/sbdf Rust library.
+This module exposes :func:`create_sbdf`, which accepts a CSV file-like object,
+a ``csv.reader``, or any DataFrame-like object (e.g. ``pandas.DataFrame``) and
+returns the raw SBDF bytes — ready to stream directly to the Spotfire Library API.
+
+The conversion is performed by a compiled Rust extension (``spotfire_community._sbdf``)
+built with PyO3 and maturin, so no external binary is required.
 """
 
-import logging
-import os
-import shutil
-import subprocess
-from collections.abc import Iterator
-from pathlib import Path
-from typing import IO
+from __future__ import annotations
 
-logger = logging.getLogger(__name__)
+import csv
+import io
+from collections.abc import Iterable, Sequence
+from typing import Protocol, runtime_checkable
 
-CLI_BINARY_NAME = "tabular-to-sbdf"
+from spotfire_community._sbdf import csv_to_sbdf as _csv_to_sbdf
 
 
-def _find_binary() -> str:
-    """Locate the tabular-to-sbdf binary on PATH or bundled alongside this package.
+@runtime_checkable
+class _HasToCsv(Protocol):
+    """Structural protocol for DataFrame-like objects with a to_csv() method."""
 
-    On Windows the bundled binary may have a ``.exe`` suffix, which is checked first.
+    def to_csv(self, *, index: bool) -> str: ...
+
+
+def create_sbdf(
+    data: io.IOBase | _HasToCsv | Iterable[Sequence[str]],
+    chunk_size: int = 10_000,
+) -> bytes:
+    """Convert tabular data to Spotfire Binary Data Format (SBDF) bytes.
+
+    Args:
+        data: One of:
+
+            * A text-mode file-like object (e.g. ``open("f.csv")``,
+              ``io.StringIO``).  The first row must be a header row.
+            * A ``csv.reader`` or any iterable of rows where each row is a
+              sequence of strings. The first row must be a header row.
+            * A ``pandas.DataFrame`` or any object that exposes a
+              ``to_csv(index=False) -> str`` method.
+
+        chunk_size: Number of rows per SBDF table slice.  Larger values use
+            more memory but produce fewer slices.
 
     Returns:
-        The absolute path to the binary.
+        The complete SBDF file as a :class:`bytes` object.
 
     Raises:
-        FileNotFoundError: If the binary cannot be found.
+        TypeError: If *data* is not a supported type.
+        ValueError: If the CSV cannot be parsed or the SBDF cannot be written.
     """
-    bundled_dir = Path(__file__).parent / "bin"
-    candidates = [bundled_dir / CLI_BINARY_NAME]
-    if os.name == "nt":
-        candidates.insert(0, bundled_dir / f"{CLI_BINARY_NAME}.exe")
-
-    for candidate in candidates:
-        if candidate.is_file():
-            return str(candidate)
-
-    on_path = shutil.which(CLI_BINARY_NAME)
-    if on_path is not None:
-        return on_path
-
-    raise FileNotFoundError(
-        f"'{CLI_BINARY_NAME}' not found. Install it or place the binary "
-        f"in {bundled_dir} or on your PATH."
-    )
-
-
-def open_converter(
-    chunk_size: int = 10_000,
-    verbose: bool = False,
-    stderr: int | IO[bytes] | None = subprocess.DEVNULL,
-) -> subprocess.Popen[bytes]:
-    """Open the tabular-to-sbdf CLI as a subprocess with stdin/stdout pipes.
-
-    The caller writes CSV data to ``proc.stdin`` and reads SBDF bytes from
-    ``proc.stdout``.
-
-    Args:
-        chunk_size: Number of rows per SBDF table slice.
-        verbose: If True, pass ``--verbose`` to the CLI to emit progress logs.
-        stderr: How to handle the subprocess stderr stream. Defaults to
-            ``subprocess.DEVNULL`` to avoid pipe-fill deadlocks; pass
-            ``None`` to inherit the parent's stderr, a file handle to
-            redirect, or ``subprocess.PIPE`` if you plan to drain it in
-            a background thread.
-
-    Returns:
-        A running subprocess with ``stdin=PIPE`` and ``stdout=PIPE``.
-    """
-    binary = _find_binary()
-    cmd = [binary, "--format", "csv", "--chunk-size", str(chunk_size)]
-    if verbose:
-        cmd.append("--verbose")
-    logger.info("Starting SBDF converter: %s", " ".join(cmd))
-
-    return subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=stderr,
-    )
-
-
-def read_sbdf_chunks(
-    proc: subprocess.Popen[bytes],
-    read_size: int = 4 * 1024 * 1024,
-) -> Iterator[bytes]:
-    """Yield SBDF bytes chunks from the converter's stdout.
-
-    Reads ``read_size`` bytes at a time from the subprocess stdout pipe.
-    Suitable for feeding directly into
-    :meth:`~spotfire_community.library.client.LibraryClient.upload_file_streaming`.
-
-    Args:
-        proc: A running tabular-to-sbdf subprocess (from :func:`open_converter`).
-        read_size: Number of bytes to read per iteration (default 4 MB).
-
-    Yields:
-        Non-empty bytes chunks of SBDF data.
-    """
-    if proc.stdout is None:
-        raise ValueError(
-            "read_sbdf_chunks() requires a subprocess opened with "
-            "stdout=subprocess.PIPE"
+    if isinstance(data, (str, bytes)):
+        raise TypeError(
+            f"create_sbdf() does not accept {type(data).__name__!r}; "
+            "pass a file-like object, csv.reader, or a DataFrame."
         )
 
-    while True:
-        chunk = proc.stdout.read(read_size)
-        if not chunk:
-            break
-        yield chunk
+    # DataFrame-like: any object with to_csv(index=False) -> str.
+    if isinstance(data, _HasToCsv):
+        return _csv_to_sbdf(data.to_csv(index=False).encode(), chunk_size)
+
+    # Text-mode file-like (io.StringIO, open(...) in text mode, etc.).
+    if isinstance(data, io.TextIOBase):
+        return _csv_to_sbdf(data.read().encode(), chunk_size)
+
+    # Binary buffered file-like (io.BytesIO, open(..., "rb"), etc.).
+    if isinstance(data, io.BufferedIOBase):
+        return _csv_to_sbdf(data.read(), chunk_size)
+
+    # Raw binary file-like.
+    if isinstance(data, io.RawIOBase):
+        raw = data.read()
+        return _csv_to_sbdf(raw if raw is not None else b"", chunk_size)
+
+    # Fallback: iterable of rows (e.g. csv.reader).
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    for row in data:
+        writer.writerow(row)
+    return _csv_to_sbdf(buf.getvalue().encode(), chunk_size)
 
 
-__all__ = [
-    "open_converter",
-    "read_sbdf_chunks",
-]
+__all__ = ["create_sbdf"]
