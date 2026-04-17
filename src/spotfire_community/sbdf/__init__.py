@@ -62,12 +62,9 @@ def infer_types(
         A list of ``num_cols`` :class:`ValueType` entries.
     """
     samples = [
-        [row[i] if i < len(row) else "" for i in range(num_cols)]
-        for row in sample_rows
+        [row[i] if i < len(row) else "" for i in range(num_cols)] for row in sample_rows
     ]
-    return [
-        ValueType(_infer_type([r[c] for r in samples])) for c in range(num_cols)
-    ]
+    return [ValueType(_infer_type([r[c] for r in samples])) for c in range(num_cols)]
 
 
 class SbdfStreamingWriter:
@@ -198,13 +195,9 @@ class SbdfStreamingWriter:
             RuntimeError: If called before :meth:`start` or more than once.
         """
         if not self._started:
-            raise RuntimeError(
-                "SbdfStreamingWriter.finish() called before start()"
-            )
+            raise RuntimeError("SbdfStreamingWriter.finish() called before start()")
         if self._finished:
-            raise RuntimeError(
-                "SbdfStreamingWriter.finish() called more than once"
-            )
+            raise RuntimeError("SbdfStreamingWriter.finish() called more than once")
         self._finished = True
         return _section(_SID_TABLE_END)
 

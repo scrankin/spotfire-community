@@ -18,7 +18,13 @@ _SBDF_MAGIC = b"\xdf\x5b"
 
 def test_value_type_members_distinct() -> None:
     # Each supported SBDF type maps to a distinct underlying int.
-    codes = {ValueType.BOOL, ValueType.INT, ValueType.LONG, ValueType.DOUBLE, ValueType.STRING}
+    codes = {
+        ValueType.BOOL,
+        ValueType.INT,
+        ValueType.LONG,
+        ValueType.DOUBLE,
+        ValueType.STRING,
+    }
     assert len(codes) == 5
 
 
@@ -80,9 +86,7 @@ def test_writer_matches_create_sbdf_byte_for_byte() -> None:
 
 
 def test_writer_low_level_methods() -> None:
-    writer = SbdfStreamingWriter(
-        headers=["n"], column_types=[ValueType.INT]
-    )
+    writer = SbdfStreamingWriter(headers=["n"], column_types=[ValueType.INT])
     head = writer.start()
     slice_bytes = writer.write_slice([["1"], ["2"]])
     tail = writer.finish()
@@ -93,17 +97,13 @@ def test_writer_low_level_methods() -> None:
 
 
 def test_writer_empty_slice_is_skipped() -> None:
-    writer = SbdfStreamingWriter(
-        headers=["n"], column_types=[ValueType.INT]
-    )
+    writer = SbdfStreamingWriter(headers=["n"], column_types=[ValueType.INT])
     writer.start()
     assert writer.write_slice([]) == b""
 
 
 def test_writer_chunks_skips_empty_batches() -> None:
-    writer = SbdfStreamingWriter(
-        headers=["n"], column_types=[ValueType.INT]
-    )
+    writer = SbdfStreamingWriter(headers=["n"], column_types=[ValueType.INT])
     chunks = list(writer.chunks(iter([[["1"]], [], [["2"]]])))
     # header, slice-1, slice-2, end = 4 chunks (middle empty batch dropped).
     assert len(chunks) == 4
