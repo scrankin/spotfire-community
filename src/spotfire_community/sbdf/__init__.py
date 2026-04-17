@@ -19,32 +19,36 @@ from collections.abc import Iterable, Iterator, Sequence
 from enum import IntEnum
 
 from spotfire_community.sbdf._writer import (
-    _SID_FILE_HEADER,
-    _SID_TABLE_END,
-    _SID_TABLE_METADATA,
-    _SID_TABLE_SLICE,
-    _VT_BOOL,
-    _VT_DOUBLE,
-    _VT_INT,
-    _VT_LONG,
-    _VT_STRING,
-    _column_slice,
-    _i32,
-    _infer_type,
-    _section,
-    _table_metadata,
+    SID_FILE_HEADER,
+    SID_TABLE_END,
+    SID_TABLE_METADATA,
+    SID_TABLE_SLICE,
+    VT_BOOL,
+    VT_DATE,
+    VT_DATETIME,
+    VT_DOUBLE,
+    VT_INT,
+    VT_LONG,
+    VT_STRING,
+    column_slice,
     csv_to_sbdf as _csv_to_sbdf,
+    i32,
+    infer_type,
+    section,
+    table_metadata,
 )
 
 
 class ValueType(IntEnum):
     """SBDF column value types supported by this package."""
 
-    BOOL = _VT_BOOL
-    INT = _VT_INT
-    LONG = _VT_LONG
-    DOUBLE = _VT_DOUBLE
-    STRING = _VT_STRING
+    BOOL = VT_BOOL
+    INT = VT_INT
+    LONG = VT_LONG
+    DOUBLE = VT_DOUBLE
+    DATETIME = VT_DATETIME
+    DATE = VT_DATE
+    STRING = VT_STRING
 
 
 def infer_types(
@@ -64,7 +68,7 @@ def infer_types(
     samples = [
         [row[i] if i < len(row) else "" for i in range(num_cols)] for row in sample_rows
     ]
-    return [ValueType(_infer_type([r[c] for r in samples])) for c in range(num_cols)]
+    return [ValueType(infer_type([r[c] for r in samples])) for c in range(num_cols)]
 
 
 class SbdfStreamingWriter:
@@ -143,10 +147,10 @@ class SbdfStreamingWriter:
             raise RuntimeError("SbdfStreamingWriter.start() called more than once")
         self._started = True
         return (
-            _section(_SID_FILE_HEADER)
+            section(SID_FILE_HEADER)
             + bytes([1, 0])
-            + _section(_SID_TABLE_METADATA)
-            + _table_metadata(self._headers, self._vtypes)
+            + section(SID_TABLE_METADATA)
+            + table_metadata(self._headers, self._vtypes)
         )
 
     def write_slice(self, rows: Sequence[Sequence[str]]) -> bytes:
@@ -179,10 +183,10 @@ class SbdfStreamingWriter:
             for row in rows
         ]
         out = bytearray()
-        out += _section(_SID_TABLE_SLICE)
-        out += _i32(self._num_cols)
+        out += section(SID_TABLE_SLICE)
+        out += i32(self._num_cols)
         for c in range(self._num_cols):
-            out += _column_slice([r[c] for r in padded], self._vtypes[c])
+            out += column_slice([r[c] for r in padded], self._vtypes[c])
         return bytes(out)
 
     def finish(self) -> bytes:
@@ -199,7 +203,7 @@ class SbdfStreamingWriter:
         if self._finished:
             raise RuntimeError("SbdfStreamingWriter.finish() called more than once")
         self._finished = True
-        return _section(_SID_TABLE_END)
+        return section(SID_TABLE_END)
 
     def chunks(
         self,

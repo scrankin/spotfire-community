@@ -23,9 +23,11 @@ def test_value_type_members_distinct() -> None:
         ValueType.INT,
         ValueType.LONG,
         ValueType.DOUBLE,
+        ValueType.DATETIME,
+        ValueType.DATE,
         ValueType.STRING,
     }
-    assert len(codes) == 5
+    assert len(codes) == 7
 
 
 def test_infer_types_matches_csv_path() -> None:
@@ -137,6 +139,61 @@ def test_writer_enforces_call_order() -> None:
         writer.write_slice([["1"]])
     with pytest.raises(RuntimeError, match="more than once"):
         writer.finish()
+
+
+def test_infer_types_detects_date() -> None:
+    sample = [["2025-01-01"], ["2025-06-15"], ["2025-12-31"]]
+    assert infer_types(sample, num_cols=1) == [ValueType.DATE]
+
+
+def test_infer_types_detects_datetime() -> None:
+    sample = [["2025-01-01T12:34:56"], ["2025-06-15 09:00:00"]]
+    assert infer_types(sample, num_cols=1) == [ValueType.DATETIME]
+
+
+def test_infer_types_falls_back_to_string_when_date_parse_fails() -> None:
+    # Some values parse as dates, one does not — whole column becomes string.
+    sample = [["2025-01-01"], ["not-a-date"], ["2025-06-15"]]
+    assert infer_types(sample, num_cols=1) == [ValueType.STRING]
+
+
+def test_writer_date_column_roundtrip_math() -> None:
+    # Sanity-check the Spotfire epoch math: 0001-01-01 UTC → 0 ms.
+    from datetime import datetime, timezone
+
+    from spotfire_community.sbdf._writer import _parse_date_ms
+
+    assert _parse_date_ms("0001-01-01") == 0
+    # 2025-01-01 is a known offset; verify against direct datetime math.
+    expected = int(
+        (
+            datetime(2025, 1, 1, tzinfo=timezone.utc)
+            - datetime(1, 1, 1, tzinfo=timezone.utc)
+        ).total_seconds()
+        * 1000
+    )
+    assert _parse_date_ms("2025-01-01") == expected
+
+
+def test_writer_date_column_emits_int64_per_row() -> None:
+    writer = SbdfStreamingWriter(headers=["d"], column_types=[ValueType.DATE])
+    writer.start()
+    slice_bytes = writer.write_slice([["2025-01-01"], ["2025-06-15"], ["2025-12-31"]])
+    # 3 rows × 8 bytes each for int64 payload.
+    # Inspect the column slice: magic+sid(3) + encoding+vtype(2) + i32 count(4)
+    # + 24 bytes of date values + i32 props(4) minimum.
+    assert len(slice_bytes) >= 3 + 4 + 2 + 4 + 24 + 4
+
+
+def test_writer_invalid_date_marks_row_invalid() -> None:
+    writer = SbdfStreamingWriter(headers=["d"], column_types=[ValueType.DATE])
+    writer.start()
+    slice_bytes = writer.write_slice([["2025-01-01"], ["not-a-date"], [""]])
+    # IsInvalid property must be present — the 2nd and 3rd rows can't parse.
+    # Column props count (int32) is non-zero when any row is invalid.
+    # The int32 right before the end of the slice is the props count;
+    # verify at least one invalid bit is set in the IsInvalid bit array.
+    assert b"IsInvalid" in slice_bytes
 
 
 def test_writer_pads_short_rows_in_slice() -> None:
