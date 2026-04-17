@@ -147,8 +147,27 @@ def test_infer_types_detects_date() -> None:
 
 
 def test_infer_types_detects_datetime() -> None:
-    sample = [["2025-01-01T12:34:56"], ["2025-06-15 09:00:00"]]
+    sample = [
+        ["2025-01-01T12:34:56"],
+        ["2025-06-15 09:00:00"],
+        ["2025-01-01T12:34:56Z"],
+        ["2025-01-01T12:34:56+02:00"],
+    ]
     assert infer_types(sample, num_cols=1) == [ValueType.DATETIME]
+
+
+def test_parse_datetime_handles_utc_suffix_and_offsets() -> None:
+    from spotfire_community.sbdf._writer import _parse_datetime_ms
+
+    # 'Z' suffix is normalized to +00:00 so Python 3.10 can parse it.
+    z_ms = _parse_datetime_ms("2025-01-01T12:34:56Z")
+    plus_zero_ms = _parse_datetime_ms("2025-01-01T12:34:56+00:00")
+    assert z_ms == plus_zero_ms
+
+    # Non-UTC offset is applied, not silently dropped.
+    plus_two_ms = _parse_datetime_ms("2025-01-01T12:34:56+02:00")
+    # +02:00 means the same instant is 10:34:56 UTC, so its ms count is smaller.
+    assert plus_two_ms == z_ms - 2 * 60 * 60 * 1000
 
 
 def test_infer_types_falls_back_to_string_when_date_parse_fails() -> None:
@@ -164,14 +183,12 @@ def test_writer_date_column_roundtrip_math() -> None:
     from spotfire_community.sbdf._writer import _parse_date_ms
 
     assert _parse_date_ms("0001-01-01") == 0
-    # 2025-01-01 is a known offset; verify against direct datetime math.
-    expected = int(
-        (
-            datetime(2025, 1, 1, tzinfo=timezone.utc)
-            - datetime(1, 1, 1, tzinfo=timezone.utc)
-        ).total_seconds()
-        * 1000
+    # 2025-01-01 is a known offset; verify against integer timedelta math
+    # (days * 86_400_000) rather than total_seconds() float conversion.
+    delta = datetime(2025, 1, 1, tzinfo=timezone.utc) - datetime(
+        1, 1, 1, tzinfo=timezone.utc
     )
+    expected = delta.days * 86_400_000
     assert _parse_date_ms("2025-01-01") == expected
 
 

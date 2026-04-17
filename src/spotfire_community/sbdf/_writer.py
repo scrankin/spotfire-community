@@ -89,19 +89,32 @@ def section(sid: int) -> bytes:
 # ---------------------------------------------------------------------------
 
 
+def _timedelta_ms(dt: datetime) -> int:
+    """Return milliseconds from the SBDF epoch to *dt* using exact integer math.
+
+    ``timedelta.total_seconds()`` returns a float and can lose precision on
+    large deltas; computing from ``days``/``seconds``/``microseconds`` keeps
+    the result exact and deterministic.
+    """
+    delta = dt - _SBDF_EPOCH
+    return delta.days * 86_400_000 + delta.seconds * 1000 + delta.microseconds // 1000
+
+
 def _parse_datetime_ms(s: str) -> int | None:
     """Parse *s* as an ISO-8601 datetime; return milliseconds since SBDF epoch.
 
-    Returns ``None`` if *s* cannot be parsed. Naive inputs are interpreted as
-    UTC.
+    Accepts a trailing ``Z`` (UTC) which ``datetime.fromisoformat`` does not
+    handle natively on Python 3.10. Naive inputs (no offset) are interpreted
+    as UTC. Returns ``None`` if *s* cannot be parsed.
     """
+    normalized = s[:-1] + "+00:00" if s.endswith("Z") else s
     try:
-        dt = datetime.fromisoformat(s)
+        dt = datetime.fromisoformat(normalized)
     except ValueError:
         return None
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    return int((dt - _SBDF_EPOCH).total_seconds() * 1000)
+    return _timedelta_ms(dt)
 
 
 def _parse_date_ms(s: str) -> int | None:
@@ -113,8 +126,7 @@ def _parse_date_ms(s: str) -> int | None:
         d = date.fromisoformat(s)
     except ValueError:
         return None
-    dt = datetime(d.year, d.month, d.day, tzinfo=timezone.utc)
-    return int((dt - _SBDF_EPOCH).total_seconds() * 1000)
+    return _timedelta_ms(datetime(d.year, d.month, d.day, tzinfo=timezone.utc))
 
 
 # ---------------------------------------------------------------------------
