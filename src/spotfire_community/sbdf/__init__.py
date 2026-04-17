@@ -3,9 +3,6 @@
 This module exposes :func:`create_sbdf`, which accepts a CSV file-like object
 or a ``csv.reader`` and returns the raw SBDF bytes — ready to stream directly
 to the Spotfire Library API.
-
-The conversion is performed by a compiled Rust extension (``spotfire_community._sbdf``)
-built with PyO3 and maturin, so no external binary is required.
 """
 
 from __future__ import annotations
@@ -14,7 +11,7 @@ import csv
 import io
 from collections.abc import Iterable, Sequence
 
-from spotfire_community._sbdf import csv_to_sbdf as _csv_to_sbdf
+from spotfire_community.sbdf._writer import csv_to_sbdf as _csv_to_sbdf
 
 
 def create_sbdf(

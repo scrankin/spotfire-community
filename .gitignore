@@ -6,6 +6,3 @@ __pycache__
 .pytest_cache/
 dist/
 .env
-# Rust build artifacts
-crates/*/target/
-crates/sbdf-lib/target/

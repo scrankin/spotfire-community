@@ -26,15 +26,11 @@ authors = [{ name = "Clay Rankin", email = "clay@wiserocksoftware.com" }]
 Repository = "https://github.com/scrankin/spotfire-community"
 
 [build-system]
-requires = ["maturin>=1.0,<2.0"]
-build-backend = "maturin"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.maturin]
-python-source = "src"
-python-packages = ["spotfire_community"]
-module-name = "spotfire_community._sbdf"
-manifest-path = "crates/sbdf-py/Cargo.toml"
-features = ["pyo3/extension-module"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/spotfire_community"]
 
 [tool.uv]
 package = true
@@ -46,7 +42,6 @@ dev = [
     "uvicorn>=0.30.6",
     "httpx>=0.28.1",
     "pytest-cov>=6.2.1",
-    "maturin>=1.0,<2.0",
 ]
 
 [tool.pyright]
