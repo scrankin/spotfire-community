@@ -30,6 +30,7 @@ build-backend = "maturin"
 
 [tool.maturin]
 python-source = "src"
+python-packages = ["spotfire_community"]
 module-name = "spotfire_community._sbdf"
 manifest-path = "crates/sbdf-py/Cargo.toml"
 features = ["pyo3/extension-module"]

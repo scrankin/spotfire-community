@@ -207,7 +207,9 @@ fn csv_to_sbdf(
                     .collect();
                 sampled.push(row);
             }
-            Some(Err(_)) => {}
+            Some(Err(e)) => {
+                return Err(PyValueError::new_err(format!("CSV parse error: {e}")));
+            }
             None => break,
         }
     }
@@ -254,26 +256,32 @@ fn csv_to_sbdf(
     .map_err(|e| PyValueError::new_err(format!("SBDF write error: {e}")))?;
 
     // Phase 2: stream table slices.
-    let mut current_chunk = sampled;
+    // Use a VecDeque so sampled rows are drained in chunk_size batches even when
+    // sample_rows > chunk_size, rather than emitting an oversized first slice.
+    let mut queue: std::collections::VecDeque<Vec<String>> = sampled.into_iter().collect();
 
     loop {
-        while current_chunk.len() < chunk_size {
+        while queue.len() < chunk_size {
             match records.next() {
                 Some(Ok(record)) => {
                     let row: Vec<String> = (0..num_cols)
                         .map(|i| record.get(i).unwrap_or("").to_string())
                         .collect();
-                    current_chunk.push(row);
+                    queue.push_back(row);
                 }
-                Some(Err(_)) => {}
+                Some(Err(e)) => {
+                    return Err(PyValueError::new_err(format!("CSV parse error: {e}")));
+                }
                 None => break,
             }
         }
 
-        if current_chunk.is_empty() {
+        if queue.is_empty() {
             break;
         }
 
+        let take = chunk_size.min(queue.len());
+        let current_chunk: Vec<Vec<String>> = queue.drain(..take).collect();
         let at_eof = current_chunk.len() < chunk_size;
 
         let column_slices: Vec<ColumnSlice> = (0..num_cols)
@@ -298,8 +306,6 @@ fn csv_to_sbdf(
         if at_eof {
             break;
         }
-
-        current_chunk = Vec::new();
     }
 
     flush_section(&mut output, |w| {

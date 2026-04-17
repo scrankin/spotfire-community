@@ -330,7 +330,8 @@ class LibraryClient:
         """
         path_parts = path.strip("/").split("/")
 
-        parent_folder_path = "/".join(path_parts[:-1])
+        parent_parts = path_parts[:-1]
+        parent_folder_path = f"/{'/'.join(parent_parts)}" if parent_parts else "/"
         parent_id = self._get_or_create_folder(parent_folder_path)
 
         job_id = self._create_upload_job(
@@ -377,8 +378,16 @@ class LibraryClient:
             Exception: If any upload request fails.
         """
         path_parts = path.strip("/").split("/")
-        parent_folder_path = "/".join(path_parts[:-1])
+        parent_parts = path_parts[:-1]
+        parent_folder_path = f"/{'/'.join(parent_parts)}" if parent_parts else "/"
         parent_id = self._get_or_create_folder(parent_folder_path)
+
+        # Peek at the stream before creating an upload job to avoid orphaning it
+        # on an empty or all-empty-chunk input.
+        data_iter = iter(data_stream)
+        pending_chunk = next((c for c in data_iter if c), None)
+        if pending_chunk is None:
+            raise ValueError("data_stream yielded no data")
 
         job_id = self._create_upload_job(
             title=path_parts[-1],
@@ -389,23 +398,14 @@ class LibraryClient:
         )
         logger.info("Streaming upload job created with ID: %s", job_id)
 
-        chunk_index = 0
-        pending_chunk: bytes | None = None
-
-        for chunk in data_stream:
+        chunk_index = 1
+        for chunk in data_iter:
             if not chunk:
                 continue
-            if pending_chunk is not None:
-                chunk_index += 1
-                self._send_upload_chunk(
-                    pending_chunk, job_id, chunk_index, finish=False
-                )
+            self._send_upload_chunk(pending_chunk, job_id, chunk_index, finish=False)
+            chunk_index += 1
             pending_chunk = chunk
 
-        if pending_chunk is None:
-            raise ValueError("data_stream yielded no data")
-
-        chunk_index += 1
         file_id = self._send_upload_chunk(
             pending_chunk, job_id, chunk_index, finish=True
         )

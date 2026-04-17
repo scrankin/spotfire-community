@@ -2,7 +2,7 @@ FROM python:3.13-bookworm
 
 # install zsh
 RUN apt-get update && \
-    apt-get install -y zsh curl git
+    apt-get install -y zsh curl git gh
 
 # install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
