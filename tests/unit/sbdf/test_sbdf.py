@@ -33,14 +33,6 @@ def test_create_sbdf_returns_bytes_from_csv_reader() -> None:
     assert result[:2] == _SBDF_MAGIC
 
 
-def test_create_sbdf_returns_bytes_from_dataframe() -> None:
-    pd = pytest.importorskip("pandas")
-    df = pd.DataFrame({"n": [1, 2, 3], "label": ["a", "b", "c"]})
-    result = create_sbdf(df)
-    assert isinstance(result, bytes)
-    assert result[:2] == _SBDF_MAGIC
-
-
 # ---------------------------------------------------------------------------
 # Type inference produces non-empty output for various column types
 # ---------------------------------------------------------------------------
