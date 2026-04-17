@@ -7,3 +7,6 @@ source $ZSH/oh-my-zsh.sh
 
 # for uv
 export PATH="$HOME/.local/bin:$PATH"
+
+# for cargo/rustup
+export PATH="$HOME/.cargo/bin:$PATH"

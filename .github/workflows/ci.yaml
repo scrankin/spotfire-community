@@ -25,6 +25,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install uv
         uses: astral-sh/setup-uv@v4
 
@@ -41,6 +44,9 @@ jobs:
 
       - name: Sync deps (with dev)
         run: uv sync --dev
+
+      - name: Build PyO3 extension
+        run: uv run maturin develop --manifest-path crates/sbdf-py/Cargo.toml
 
       - name: Lint (ruff)
         run: |

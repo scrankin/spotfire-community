@@ -2,7 +2,7 @@ FROM python:3.13-bookworm
 
 # install zsh
 RUN apt-get update && \
-    apt-get install -y zsh curl git
+    apt-get install -y zsh curl git gh
 
 # install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
@@ -26,6 +26,10 @@ ADD .zshrc $HOME/.zshrc
 RUN chown $USERNAME:$USERNAME $HOME/.zshrc
 
 USER $USERNAME
+
+# install rustup (stable toolchain)
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --no-modify-path
+ENV PATH="/home/$USERNAME/.cargo/bin:$PATH"
 
 # install oh-my-zsh
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended

@@ -17,6 +17,7 @@ class ItemType(StrEnum):
     DXP = "spotfire.dxp"
     FOLDER = "spotfire.folder"
     MOD = "spotfire.mod"
+    SBDF = "spotfire.sbdf"
 
 
 class ConflictResolution(StrEnum):
@@ -40,8 +41,9 @@ class LibraryItem(BaseModel):
     """
 
     model_config = ConfigDict(
-        alias_generator=lambda s: s.split("_")[0]
-        + "".join(part.title() for part in s.split("_")[1:]),
+        alias_generator=lambda s: (
+            s.split("_")[0] + "".join(part.title() for part in s.split("_")[1:])
+        ),
         populate_by_name=True,
     )
 

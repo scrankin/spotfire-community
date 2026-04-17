@@ -1,7 +1,10 @@
 """Client for Spotfire Library REST API (v2)."""
 
 import logging
+from collections.abc import Iterator
+
 import requests
+
 from .._core import SpotfireRequestsSession
 
 from .models import (
@@ -217,13 +220,52 @@ class LibraryClient:
 
         return create_response.json()["jobId"]
 
+    def _send_upload_chunk(
+        self,
+        data: bytes,
+        job_id: str,
+        chunk_index: int,
+        *,
+        finish: bool = False,
+    ) -> str | None:
+        """
+        Send a single chunk to an upload job.
+
+        Args:
+            data: The chunk bytes to upload.
+            job_id: The ID of the upload job.
+            chunk_index: The 1-based chunk sequence number.
+            finish: Whether this is the final chunk.
+
+        Returns:
+            The uploaded item ID when ``finish`` is True, otherwise None.
+        """
+        upload_response = self._requests_session.post(
+            f"{self._url}/api/rest/library/v2/upload/{job_id}",
+            data=data,
+            params={
+                "chunk": chunk_index,
+                "finish": finish,
+            },
+            headers={"Content-Type": "application/octet-stream"},
+        )
+
+        if upload_response.status_code != 200:
+            raise Exception(
+                f"Failed to upload chunk {chunk_index}: {upload_response.status_code} - {upload_response.text}"
+            )
+
+        if finish:
+            return upload_response.json()["item"]["id"]
+        return None
+
     def _add_data_to_upload_job(
         self,
         data: bytes,
         job_id: str,
     ) -> str:
         """
-        Uploads a file to the Spotfire library as part of an upload job.
+        Uploads a file to the Spotfire library as a single chunk.
 
         Args:
             data (bytes): The file data to upload.
@@ -231,26 +273,13 @@ class LibraryClient:
 
         Returns:
             str: The ID of the uploaded file.
-
-        Raises:
-            Exception: If the upload fails.
         """
-        upload_response = self._requests_session.post(
-            f"{self._url}/api/rest/library/v2/upload/{job_id}",
-            data=data,
-            params={
-                "chunk": 1,
-                "finish": True,
-            },
-            headers={"Content-Type": "application/octet-stream"},
-        )
-
-        if upload_response.status_code != 200:
-            raise Exception(
-                f"Failed to upload file: {upload_response.status_code} - {upload_response.text}"
+        item_id = self._send_upload_chunk(data, job_id, chunk_index=1, finish=True)
+        if item_id is None:
+            raise RuntimeError(
+                "Final upload chunk completed without returning an item ID"
             )
-
-        return upload_response.json()["item"]["id"]
+        return item_id
 
     def _delete_item_by_id(self, item_id: str) -> None:
         """
@@ -301,7 +330,8 @@ class LibraryClient:
         """
         path_parts = path.strip("/").split("/")
 
-        parent_folder_path = "/".join(path_parts[:-1])
+        parent_parts = path_parts[:-1]
+        parent_folder_path = f"/{'/'.join(parent_parts)}" if parent_parts else "/"
         parent_id = self._get_or_create_folder(parent_folder_path)
 
         job_id = self._create_upload_job(
@@ -315,6 +345,76 @@ class LibraryClient:
 
         file_id = self._add_data_to_upload_job(data, job_id)
         logger.info("File uploaded to %s with ID: %s", path, file_id)
+        return file_id
+
+    def upload_file_streaming(
+        self,
+        data_stream: Iterator[bytes],
+        path: str,
+        item_type: ItemType,
+        *,
+        description: str = "",
+        overwrite: bool = False,
+    ) -> str:
+        """
+        Upload a file to the Spotfire library by streaming chunks.
+
+        Sends data from an iterator of bytes chunks using the multi-chunk upload
+        protocol. Each chunk is uploaded sequentially; the final chunk is sent
+        with ``finish=True`` to complete the upload.
+
+        Args:
+            data_stream: Iterator yielding bytes chunks.
+            path: The full library path including filename (e.g., "/folder/file.sbdf").
+            item_type: The type of the library item.
+            description: Optional description for the item.
+            overwrite: Whether to overwrite an existing item at the same path.
+
+        Returns:
+            str: The ID of the uploaded file.
+
+        Raises:
+            ValueError: If data_stream yields no chunks.
+            Exception: If any upload request fails.
+        """
+        path_parts = path.strip("/").split("/")
+        parent_parts = path_parts[:-1]
+        parent_folder_path = f"/{'/'.join(parent_parts)}" if parent_parts else "/"
+        parent_id = self._get_or_create_folder(parent_folder_path)
+
+        # Peek at the stream before creating an upload job to avoid orphaning it
+        # on an empty or all-empty-chunk input.
+        data_iter = iter(data_stream)
+        pending_chunk = next((c for c in data_iter if c), None)
+        if pending_chunk is None:
+            raise ValueError("data_stream yielded no data")
+
+        job_id = self._create_upload_job(
+            title=path_parts[-1],
+            item_type=item_type,
+            parent_id=parent_id,
+            description=description,
+            overwrite=overwrite,
+        )
+        logger.info("Streaming upload job created with ID: %s", job_id)
+
+        chunk_index = 1
+        for chunk in data_iter:
+            if not chunk:
+                continue
+            self._send_upload_chunk(pending_chunk, job_id, chunk_index, finish=False)
+            chunk_index += 1
+            pending_chunk = chunk
+
+        file_id = self._send_upload_chunk(
+            pending_chunk, job_id, chunk_index, finish=True
+        )
+        if file_id is None:
+            raise RuntimeError(
+                "Final upload chunk completed without returning an item ID"
+            )
+
+        logger.info("Streaming upload to %s completed with ID: %s", path, file_id)
         return file_id
 
     def delete_folder(
